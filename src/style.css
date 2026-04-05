@@ -1,0 +1,49 @@
+/* =========================================
+   Global Reset & Base Styles
+   ========================================= */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* =========================================
+   Body Layout
+   ========================================= */
+html,
+body {
+  width: 100%;
+  height: 100%;
+  background-color: #111111;
+  /* キャンバスを画面中央に配置 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  /* アンチエイリアス向上 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* =========================================
+   App Container
+   ========================================= */
+#app {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* =========================================
+   Canvas
+   ========================================= */
+#slot-canvas {
+  display: block;
+  /* 鮮明なピクセル描画のためスムージングを無効化 */
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  /* 細い枠線でキャンバス境界を視覚的に示す（デバッグ用） */
+  outline: 1px solid #333333;
+}
