@@ -282,5 +282,20 @@ export class CanvasRenderer {
     // ── CREDIT 表示 (右下・下段) ──
     this.ctx.fillStyle = '#ffaa00';
     this.ctx.fillText(`CREDIT: ${gameState.credits}`, CANVAS_WIDTH - 30, marginY);
+
+    // ── 設定 表示 (左上) ──
+    this.ctx.textAlign = 'left';
+    this.ctx.textBaseline = 'top';
+    this.ctx.fillStyle = '#aaaaaa';
+    this.ctx.font = 'bold 16px "Courier New", monospace';
+    this.ctx.fillText(`SETTING: ${gameState.setting}`, 15, 15);
+
+    // ── ボーナス経過 表示 (右上) ──
+    if (gameState.playState === 'BONUS_GAME') {
+      this.ctx.textAlign = 'right';
+      this.ctx.fillStyle = '#ff55aa';
+      const target = gameState.runningBonus === 'BIG' ? 252 : 98;
+      this.ctx.fillText(`${gameState.runningBonus} PAY: ${gameState.currentBonusPayOut} / ${target}`, CANVAS_WIDTH - 15, 15);
+    }
   }
 }

@@ -3,6 +3,7 @@ import { CanvasRenderer } from './views/CanvasRenderer';
 import { ReelController } from './logic/ReelController';
 import { FRAME_DURATION_MS } from './constants/config';
 import { gameState } from './state/GameState';
+import { Lottery } from './logic/Lottery';
 
 // ─────────────────────────────────────────
 // マウントポイントの取得
@@ -50,8 +51,13 @@ window.addEventListener('keydown', (e: KeyboardEvent) => {
       break;
     case 'b':
     case 'Enter':
-      // フェーズ1.2: MAX BET (3枚掛け)
-      if (reelController.areAllStopped() && gameState.playState !== 'BONUS_GAME') {
+      if (gameState.isReplay) {
+        console.log('[SYSTEM] リプレイ作動中のためベットは自動で行われています');
+        break;
+      }
+      // フェーズ1.2 & 5.1: MAX BET (3枚掛け)
+      // ボーナス消化中もBET可能にするため、playState !== 'BONUS_GAME' 制約を外した
+      if (reelController.areAllStopped()) {
         const required = 3 - gameState.bet;
         if (required > 0 && gameState.credits >= required) {
           gameState.credits -= required;
@@ -62,36 +68,58 @@ window.addEventListener('keydown', (e: KeyboardEvent) => {
         }
       }
       break;
+    case 's':
+      // 設定（1〜6, X）の変更
+      if (gameState.setting === 'X') {
+        gameState.setting = 1;
+      } else if (gameState.setting === 6) {
+        gameState.setting = 'X';
+      } else {
+        gameState.setting = (Number(gameState.setting) + 1) as any;
+      }
+      console.log(`[SYSTEM] 設定を ${gameState.setting} に変更しました`);
+      break;
     case '0':
       // デバッグ機能: 強制的にボーナスフラグを立てる
-      gameState.hasBonusFlag = true;
-      console.log('[DEBUG] ボーナスフラグを強制セットしました！');
+      gameState.activeBonus = 'BIG';
+      console.log('[DEBUG] BIGボーナスフラグを強制セットしました！');
       break;
     case ' ':
       // 全リールが停止済みのときのみ再スタート
       if (reelController.areAllStopped()) {
-        if (gameState.playState === 'BONUS_GAME') {
-          console.log('ボーナス消化中は現在未実装です');
-          return;
-        }
-
         if (gameState.bet < 3) {
           console.log('[SYSTEM] メダルを3枚BETしてください');
           return;
         }
 
         // 次ゲーム開始時の初期化
-        gameState.bet = 0; // スピン開始で掛けたメダルを消費し状態リセット
-        gameState.pay = 0; // 前ゲームの払い出し表示をリセット
+        gameState.bet = 0;
+        gameState.pay = 0;
+        gameState.isReplay = false; // リプレイ権利を消費
+        gameState.activeSmallRole = 'NONE'; // 1ゲーム完結の小役フラグをリセット
 
-        // 内部抽選 (NORMAL 状態の時のみ)
-        if (gameState.playState === 'NORMAL') {
-          // テスト用 1/5 (20%) でボーナスフラグを立てる
-          if (Math.random() < 0.2) {
-            gameState.hasBonusFlag = true;
-            console.log('[DEBUG] 内部抽選: ボーナス当選！');
+        // 内部抽選 (通常時、ボーナス成立後、およびボーナス中)
+        if (gameState.playState === 'BONUS_GAME') {
+          const drawn = Lottery.drawBonus();
+          gameState.activeSmallRole = drawn as any;
+          console.log(`[DEBUG] ボーナス中抽選: 小役（${drawn}）当選！`);
+        } else {
+          const drawn = Lottery.draw(gameState.setting);
+
+          if (drawn === 'BIG' || drawn === 'REG') {
+            // ボーナスは揃えるまで持ち越されるため、未成立時のみセットする
+            if (gameState.activeBonus === 'NONE') {
+              gameState.activeBonus = drawn;
+              console.log(`[DEBUG] 内部抽選: ボーナス（${drawn}）当選！設定${gameState.setting}`);
+            } else {
+               console.log(`[DEBUG] 内部抽選: ハズレ（ボーナス成立済み）`);
+            }
+          } else if (drawn !== 'NONE') {
+            // 小役当選
+            gameState.activeSmallRole = drawn;
+            console.log(`[DEBUG] 内部抽選: 小役（${drawn}）当選！設定${gameState.setting}`);
           } else {
-            console.log('[DEBUG] 内部抽選: ハズレ');
+            console.log(`[DEBUG] 内部抽選: ハズレ 設定${gameState.setting}`);
           }
         }
 

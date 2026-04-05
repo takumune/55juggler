@@ -7,7 +7,24 @@
     <title>55juggler</title>
   </head>
   <body>
-    <div id="app"></div>
+    <div class="wrapper">
+      <div id="app"></div>
+      <div id="instructions">
+        <p><strong>【 操作方法 】</strong></p>
+        <p>
+          <kbd>↑</kbd>：メダル投入 (50枚)&nbsp;&nbsp;|&nbsp;&nbsp;
+          <kbd>Enter</kbd>：MAX BET (3枚)&nbsp;&nbsp;|&nbsp;&nbsp;
+          <kbd>Space</kbd>：レバーON (回転)
+        </p>
+        <p>
+          <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd>：ストップ (左・中・右)&nbsp;&nbsp;|&nbsp;&nbsp;
+          <kbd>s</kbd>：設定変更 (1〜6)
+        </p>
+        <p style="font-size: 12px; margin-top: 5px; color: #777;">
+          <kbd>0</kbd>：[デバッグ] 強制ボーナスフラグ
+        </p>
+      </div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

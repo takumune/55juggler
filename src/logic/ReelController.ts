@@ -16,11 +16,10 @@ const SPIN_SPEED_PPS = 450;
 const TOTAL_STRIP_HEIGHT = REEL_LENGTH * SYMBOL_HEIGHT;
 
 /**
- * 停止ボタン押下後に「滑らせる」コマ数。
- * 実際のパチスロでは役抽選によって 0〜4 コマ変動するが、
- * 現フェーズはアニメーションテストのため固定値とする。
+ * かつての固定滑り定数。現在はフェーズ3.1の動的滑り計算 (calculateSlip) に置き換わっています。
+ * 参考: 実際のパチスロでの最大引き込みコマ数は 4 コマ。
  */
-const SLIDE_SYMBOLS = 2;
+// const SLIDE_SYMBOLS = 2; // もう使わないが記録用にコメント
 
 // ─────────────────────────────────────────
 // 内部状態型（ReelState + scrollY を追加）
@@ -158,9 +157,8 @@ export class ReelController {
   /**
    * 指定リールに停止指令を出す。
    *
-   * SPINNING → SLIDING へ遷移し、現在のコマ境界から SLIDE_SYMBOLS コマ先の
-   * コマ境界を targetY として設定する。
-   * リールの速度は変わらず、update() 内で targetY 到達時に自動的に STOPPED へ移行する。
+   * SPINNING → SLIDING へ遷移し、フラグ状態と出目に応じた滑りコマ数を計算して
+   * targetY を設定する。
    *
    * @param reelIndex 0=左, 1=中, 2=右
    */
@@ -172,15 +170,143 @@ export class ReelController {
     if (s.status !== 'SPINNING') return; // SLIDING・STOPPED はガード
 
     // ── targetY 計算 ──
-    // 「ボタン押下時に上端にいるコマ」の境界座標 + SLIDE_SYMBOLS コマ分前進
-    // → 常にコマ境界（scrollOffset = 0）になる。
-    const currentBoundary = Math.floor(s.scrollY / SYMBOL_HEIGHT) * SYMBOL_HEIGHT;
-    s.targetY = (currentBoundary + SLIDE_SYMBOLS * SYMBOL_HEIGHT) % TOTAL_STRIP_HEIGHT;
+    // 停止ボタンが押された瞬間の位置から「次のコマ境界」を求める
+    const nextBoundary = Math.ceil(s.scrollY / SYMBOL_HEIGHT) * SYMBOL_HEIGHT;
+
+    // 次の境界に到達した時点で一番上に描画される図柄のインデックス(baseFirstIndex)を逆算
+    const targetInv = (TOTAL_STRIP_HEIGHT - nextBoundary % TOTAL_STRIP_HEIGHT) % TOTAL_STRIP_HEIGHT;
+    const baseFirstIndex = Math.floor(targetInv / SYMBOL_HEIGHT) % REEL_LENGTH;
+
+    // フェーズ3.1: フラグに基づく「引き込み（滑り）」コマ数（0〜4）の計算
+    const slip = this.calculateSlip(reelIndex, baseFirstIndex);
+
+    s.targetY = (nextBoundary + slip * SYMBOL_HEIGHT) % TOTAL_STRIP_HEIGHT;
 
     // SPINNING → SLIDING へ遷移（速度は据え置き）
     s.status    = 'SLIDING';
     s.isSpinning = true;  // まだ動いている
     s.isStopped  = false;
+  }
+
+  /**
+   * 現在のフラグに基づいて、最大4コマの範囲で「引き込み（滑り）」コマ数を計算する。
+   * (フェーズ3.1: 当選役の引き込み ＋ フェーズ3.2: ハズレ役の蹴飛ばし)
+   */
+  private calculateSlip(reelIndex: number, currentFirstIndex: number): number {
+    const id = INDEX_TO_REEL_ID[reelIndex];
+    // アクティブなフラグ（小役優先、なければボーナス）
+    const flag = gameState.activeSmallRole !== 'NONE' ? gameState.activeSmallRole : gameState.activeBonus;
+    
+    let targetSymbol: SymbolType | null = null;
+    
+    // 各フラグに対する目標図柄（すべての中段ラインに揃える前提）
+    if (flag === 'BIG') targetSymbol = '7';
+    else if (flag === 'REG') targetSymbol = (id === 'right') ? 'BAR' : '7';
+    else if (flag === 'GRAPE') targetSymbol = 'GRAPE';
+    else if (flag === 'REPLAY') targetSymbol = 'REPLAY';
+    else if (flag === 'BELL') targetSymbol = 'BELL';
+    else if (flag === 'CLOWN') targetSymbol = 'CLOWN';
+    else if (flag === 'CHERRY') targetSymbol = 'CHERRY';
+
+    // 1. 当選役がある場合、0コマ〜4コマ滑りの範囲で引き込みを試みる (3.1)
+    if (targetSymbol) {
+      for (let slip = 0; slip <= 4; slip++) {
+        const candidateFirstIndex = (currentFirstIndex - slip + REEL_LENGTH) % REEL_LENGTH;
+        const candidateCenterIndex = (candidateFirstIndex + 1) % REEL_LENGTH;
+        if (REEL_CONFIG[id][candidateCenterIndex] === targetSymbol) {
+          // 引き込める位置だが、他の誤爆（偶然当たっていない別役が揃う）がないか確認 (3.2連携)
+          if (!this.wouldFormUnauthorizedWin(reelIndex, slip, currentFirstIndex)) {
+            return slip; 
+          }
+        }
+      }
+    }
+
+    // 2. 引っ込み対象がない（ハズレ）、または引けない場合、0コマ〜4コマの間で
+    // 「不正な入賞が発生しない」最短の滑りを優先して探す（フェーズ3.2 蹴飛ばし）
+    for (let slip = 0; slip <= 4; slip++) {
+      if (!this.wouldFormUnauthorizedWin(reelIndex, slip, currentFirstIndex)) {
+        return slip;
+      }
+    }
+
+    // 3. 万が一（配列構造上で回避不可能な場合など、理論上起こらないがフォールバック）
+    return 0;
+  }
+
+  /**
+   * その滑りコマ数で停止した場合、「当選していない役」が誤って揃ってしまうか（誤爆）を判定する。
+   * (フェーズ4.1: 有効5ラインの全判定に対応)
+   */
+  private wouldFormUnauthorizedWin(reelIndex: number, slip: number, currentFirstIndex: number): boolean {
+    const id = INDEX_TO_REEL_ID[reelIndex];
+    const candidateFirstIndex = (currentFirstIndex - slip + REEL_LENGTH) % REEL_LENGTH;
+
+    const layout = {
+      left: this.states.left.status === 'STOPPED' 
+        ? this.getVisibleSymbols('left')
+        : { top: 'UL_T', center: 'UL_C', bottom: 'UL_B' },
+      center: this.states.center.status === 'STOPPED'
+        ? this.getVisibleSymbols('center')
+        : { top: 'UC_T', center: 'UC_C', bottom: 'UC_B' },
+      right: this.states.right.status === 'STOPPED'
+        ? this.getVisibleSymbols('right')
+        : { top: 'UR_T', center: 'UR_C', bottom: 'UR_B' }
+    };
+
+    // シミュレーション対象のリールを上書き
+    layout[id] = this.getSimulatedVisibleSymbols(id, candidateFirstIndex);
+
+    const lines = [
+      [layout.left.center, layout.center.center, layout.right.center],
+      [layout.left.top, layout.center.top, layout.right.top],
+      [layout.left.bottom, layout.center.bottom, layout.right.bottom],
+      [layout.left.top, layout.center.center, layout.right.bottom],
+      [layout.left.bottom, layout.center.center, layout.right.top]
+    ];
+
+    const flag = gameState.activeSmallRole !== 'NONE' ? gameState.activeSmallRole : gameState.activeBonus;
+
+    for (const [l, c, r] of lines) {
+      const winRole = this.getWinRole(l, c, r);
+      if (winRole !== 'NONE' && winRole !== flag) {
+        return true; // 当選していない役が揃ってしまう
+      }
+    }
+
+    return false;
+  }
+
+  /** あるリールの現在の見え方（上・中・下段）を取得する */
+  private getVisibleSymbols(id: ReelId) {
+    const s = this.states[id];
+    const inv = (TOTAL_STRIP_HEIGHT - s.scrollY % TOTAL_STRIP_HEIGHT) % TOTAL_STRIP_HEIGHT;
+    const firstIndex = Math.floor(inv / SYMBOL_HEIGHT) % REEL_LENGTH;
+    return this.getSimulatedVisibleSymbols(id, firstIndex);
+  }
+
+  /** 指定インデックスが先頭に来た時の見え方（上・中・下段）をシミュレートする */
+  private getSimulatedVisibleSymbols(id: ReelId, firstIndex: number) {
+    return {
+      top: REEL_CONFIG[id][firstIndex],
+      center: REEL_CONFIG[id][(firstIndex + 1) % REEL_LENGTH],
+      bottom: REEL_CONFIG[id][(firstIndex + 2) % REEL_LENGTH],
+    };
+  }
+
+  /** ライン上の3つの図柄から成立役を判定する */
+  private getWinRole(symL: string, symC: string, symR: string): string {
+    if (symL === '7' && symC === '7' && symR === '7') return 'BIG';
+    if (symL === '7' && symC === '7' && symR === 'BAR') return 'REG';
+    if (symL === 'BAR' && symC === 'BAR' && symR === 'BAR') return 'REG'; // 万が一のため
+    if (symL === 'REPLAY' && symC === 'REPLAY' && symR === 'REPLAY') return 'REPLAY';
+    if (symL === 'GRAPE' && symC === 'GRAPE' && symR === 'GRAPE') return 'GRAPE';
+    if (symL === 'BELL' && symC === 'BELL' && symR === 'BELL') return 'BELL';
+    if (symL === 'CLOWN' && symC === 'CLOWN' && symR === 'CLOWN') return 'CLOWN';
+    // チェリーは左に止まるだけで単独入賞
+    if (symL === 'CHERRY') return 'CHERRY';
+    
+    return 'NONE';
   }
 
   // ─────────────────────────────────────────
@@ -241,43 +367,87 @@ export class ReelController {
   }
 
   /**
-   * 指定したリールで、現在枠の「中段」に表示されている図柄を取得する。
-   * 描画時と同様の逆変換を用いて、配列上のインデックスを導出する。
-   */
-  getCenterSymbol(id: ReelId): SymbolType {
-    const s = this.states[id];
-    // 下向きスクロールの逆変換: 先頭コマのインデックスを計算
-    const inv = (TOTAL_STRIP_HEIGHT - s.scrollY % TOTAL_STRIP_HEIGHT) % TOTAL_STRIP_HEIGHT;
-    const firstIndex = Math.floor(inv / SYMBOL_HEIGHT) % REEL_LENGTH;
-    // 中段は上から2番目なので +1
-    const centerIndex = (firstIndex + 1) % REEL_LENGTH;
-    
-    return REEL_CONFIG[id][centerIndex];
-  }
-
-  /**
-   * 全てのリールが停止した際に呼び出され、入賞判定や後告知（ランプ点灯）を行う。
+   * 全てのリールが停止した際に呼び出され、5ラインの入賞判定、払い出し、後告知等を行う。
    */
   evaluateWin(): void {
-    const left = this.getCenterSymbol('left');
-    const center = this.getCenterSymbol('center');
-    const right = this.getCenterSymbol('right');
+    const layout = {
+      left: this.getVisibleSymbols('left'),
+      center: this.getVisibleSymbols('center'),
+      right: this.getVisibleSymbols('right')
+    };
 
-    const isSevenWin = left === '7' && center === '7' && right === '7';
-    const isBarWin = left === 'BAR' && center === 'BAR' && right === 'BAR';
-    const isAligned = isSevenWin || isBarWin;
+    const lines = [
+      [layout.left.center, layout.center.center, layout.right.center],
+      [layout.left.top, layout.center.top, layout.right.top],
+      [layout.left.bottom, layout.center.bottom, layout.right.bottom],
+      [layout.left.top, layout.center.center, layout.right.bottom],
+      [layout.left.bottom, layout.center.center, layout.right.top]
+    ];
+
+    let totalPay = 0;
+    let wonBonus: string = 'NONE';
+    let wonReplay = false;
+    let cherryPaid = false; // チェリーの重複払出を防ぐ用
+
+    for (const [l, c, r] of lines) {
+      const role = this.getWinRole(l as string, c as string, r as string);
+      switch(role) {
+        case 'REPLAY': wonReplay = true; break;
+        case 'GRAPE': 
+          totalPay += (gameState.playState === 'BONUS_GAME') ? 14 : 8; 
+          break;
+        case 'BELL': totalPay += 14; break;
+        case 'CLOWN': totalPay += 10; break;
+        case 'BIG': wonBonus = 'BIG'; break;
+        case 'REG': wonBonus = 'REG'; break;
+        case 'CHERRY': 
+          if (!cherryPaid) {
+            totalPay += 2; 
+            cherryPaid = true;
+          }
+          break;
+      }
+    }
+
+    // フェーズ4.2: 払い出し処理
+    if (totalPay > 0) {
+      console.log(`🎰 小役入賞: ${totalPay}枚の払い出し！`);
+      gameState.pay = totalPay;
+      gameState.credits += totalPay;
+    }
+
+    // フェーズ5.1: ボーナス終了判定
+    if (gameState.playState === 'BONUS_GAME' && totalPay > 0) {
+      gameState.currentBonusPayOut += totalPay;
+      const targetPay = gameState.runningBonus === 'BIG' ? 252 : 98;
+      if (gameState.currentBonusPayOut >= targetPay) {
+        console.log(`🎊 ${gameState.runningBonus} ボーナス終了！（合計払い出し: ${gameState.currentBonusPayOut}枚）`);
+        gameState.playState = 'NORMAL';
+        gameState.runningBonus = 'NONE';
+        gameState.currentBonusPayOut = 0;
+      }
+    }
+
+    // フェーズ1.3: リプレイの判定
+    if (wonReplay) {
+      console.log('🔄 リプレイ成立！次ゲームはメダル不要です');
+      gameState.isReplay = true;
+      gameState.bet = 3; // 次ゲーム用に自動ベット
+    } else {
+       gameState.isReplay = false;
+    }
 
     if (gameState.playState === 'BONUS_STANDBY') {
-      // 既にフラグが立ってランプが光っている状態での入賞チェック
-      if (isAligned) {
-        console.log('🎉 ボーナス開始！');
+      // 既にフラグが立ってランプが光っている状態でのボーナス入賞完了
+      if (wonBonus !== 'NONE') {
+        console.log(`🎉 ボーナス（${wonBonus}）開始！`);
         gameState.playState = 'BONUS_GAME';
-        gameState.hasBonusFlag = false;
+        gameState.activeBonus = 'NONE';
         gameState.isGogoLampOn = false;
       }
     } else if (gameState.playState === 'NORMAL') {
       // 後告知: 回転開始時の抽選で当選していれば、停止時にランプを点灯する
-      if (gameState.hasBonusFlag) {
+      if (gameState.activeBonus !== 'NONE') {
         gameState.isGogoLampOn = true;
         gameState.playState = 'BONUS_STANDBY';
         console.log('[DEBUG] GOGO!ランプ点灯 ✨');

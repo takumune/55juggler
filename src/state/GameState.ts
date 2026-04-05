@@ -13,8 +13,20 @@ export class GameState {
   /** 現在のゲーム状態（通常時、ボーナス確定状態、ボーナス消化中） */
   public playState: PlayState = 'NORMAL';
 
-  /** 内部的にボーナスが当選しているかどうか（フラグ） */
-  public hasBonusFlag: boolean = false;
+  /** 現在消化中のボーナス種別 */
+  public runningBonus: 'NONE' | 'BIG' | 'REG' = 'NONE';
+
+  /** ボーナス消化中の累積払い出し枚数 */
+  public currentBonusPayOut: number = 0;
+
+  /** 持ち越さるボーナスフラグ */
+  public activeBonus: 'NONE' | 'BIG' | 'REG' = 'NONE';
+
+  /** そのゲーム限りの小役フラグ */
+  public activeSmallRole: 'NONE' | 'REPLAY' | 'GRAPE' | 'BELL' | 'CLOWN' | 'CHERRY' = 'NONE';
+
+  /** 現在の台設定 (1〜6, またはX) */
+  public setting: 1 | 2 | 3 | 4 | 5 | 6 | 'X' = 6;
 
   /** 所持メダル（クレジット） */
   public credits: number = 0;
@@ -24,6 +36,9 @@ export class GameState {
 
   /** 現在ベットされている枚数 */
   public bet: number = 0;
+
+  /** 次ゲームへのリプレイ状態 */
+  public isReplay: boolean = false;
 
   private constructor() {}
 

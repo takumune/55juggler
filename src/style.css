@@ -30,10 +30,45 @@ body {
 /* =========================================
    App Container
    ========================================= */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
 #app {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+#instructions {
+  color: #aaaaaa;
+  font-family: "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+  text-align: center;
+  background: #1a1a1a;
+  padding: 15px 25px;
+  border-radius: 8px;
+  border: 1px solid #333;
+  line-height: 1.8;
+  font-size: 14px;
+}
+
+#instructions p {
+  margin-bottom: 8px;
+}
+#instructions p:last-child {
+  margin-bottom: 0;
+}
+
+#instructions kbd {
+  background: #333;
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: "Courier New", monospace;
+  font-weight: bold;
 }
 
 /* =========================================
