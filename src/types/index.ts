@@ -35,21 +35,58 @@ export interface GameState {
 }
 
 // ─────────────────────────────────────────
-// リール・図柄
+// 図柄 (Symbol)
 // ─────────────────────────────────────────
 
-/** リール上の図柄の種類 */
-export type SymbolId =
-  | 'BAR'
-  | 'SEVEN'
-  | 'CHERRY'
+/**
+ * リール上に存在する図柄の種類。
+ * REEL_CONFIG の文字列リテラルと対応させること。
+ */
+export type SymbolType =
   | 'BELL'
-  | 'WATERMELON'
-  | 'REPLAY';
+  | '7'
+  | 'REPLAY'
+  | 'GRAPE'
+  | 'BAR'
+  | 'CHERRY'
+  | 'CLOWN';
 
-/** 図柄の定義 */
-export interface SymbolDef {
-  id: SymbolId;
-  label: string;   // 描画用ラベル（暫定テキスト）
-  color: string;   // 暫定の背景色
+// ─────────────────────────────────────────
+// リール (Reel)
+// ─────────────────────────────────────────
+
+/** リールの識別子（左・中・右） */
+export type ReelId = 'left' | 'center' | 'right';
+
+/**
+ * 個別リールの状態遷移を表す型。
+ *
+ * ```
+ * SPINNING ──[stop 入力]──► SLIDING ──[targetY 到達]──► STOPPED
+ *    ▲                                                      │
+ *    └──────────────────[space 入力]──────────────────────┘
+ * ```
+ */
+export type ReelStatus = 'SPINNING' | 'SLIDING' | 'STOPPED';
+
+/**
+ * 各リールの実行時状態を保持するインターフェース。
+ *
+ * - `status`       : 主状態（SPINNING / SLIDING / STOPPED）
+ * - `topIndex`     : リール配列内で「上コマ」に相当するインデックス（0〜20、環状）
+ * - `scrollOffset` : コマ内ピクセルオフセット（0 〜 SYMBOL_HEIGHT-1）
+ * - `stopIndex`    : 完全停止時の topIndex 確定値（STOPPED 前は null）
+ * - `targetY`      : 滑り停止の目標 scrollY（SLIDING 時のみ有効）
+ * - `isSpinning`   : status が SPINNING または SLIDING（後方互換ヘルパー）
+ * - `isStopped`    : status が STOPPED（後方互換ヘルパー）
+ */
+export interface ReelState {
+  status: ReelStatus;
+  topIndex: number;         // 0 〜 REEL_LENGTH - 1
+  scrollOffset: number;     // px
+  stopIndex: number | null;
+  targetY: number;          // SLIDING 時の目標 scrollY
+  // ── 後方互換ヘルパー（status から派生） ──
+  isSpinning: boolean;      // = status !== 'STOPPED'
+  isStopped: boolean;       // = status === 'STOPPED'
 }
