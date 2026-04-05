@@ -70,6 +70,7 @@ export class CanvasRenderer {
     this.drawReelFrame();
     this.drawWinLine();
     this.drawGogoLamp();
+    this.drawUI();
   }
 
   // ─────────────────────────────────────────
@@ -253,5 +254,33 @@ export class CanvasRenderer {
     
     this.ctx.fillText('GOGO!', x, y);
     this.ctx.restore();
+  }
+
+  // ─────────────────────────────────────────
+  // プライベート：UI情報描画
+  // ─────────────────────────────────────────
+
+  /**
+   * メダル情報（CREDIT, PAY, BET）を画面下部にデジタル表示する
+   */
+  private drawUI(): void {
+    const marginY = CANVAS_HEIGHT - 30;
+
+    this.ctx.textBaseline = 'middle';
+    this.ctx.font = 'bold 24px "Courier New", monospace';
+
+    // ── BET 表示 (左下) ──
+    this.ctx.textAlign = 'left';
+    this.ctx.fillStyle = '#ff4444';
+    this.ctx.fillText(`BET: ${gameState.bet}`, 30, marginY);
+
+    // ── PAY 表示 (右下・上段) ──
+    this.ctx.textAlign = 'right';
+    this.ctx.fillStyle = '#00ffaa';
+    this.ctx.fillText(`PAY: ${gameState.pay}`, CANVAS_WIDTH - 30, marginY - 30);
+
+    // ── CREDIT 表示 (右下・下段) ──
+    this.ctx.fillStyle = '#ffaa00';
+    this.ctx.fillText(`CREDIT: ${gameState.credits}`, CANVAS_WIDTH - 30, marginY);
   }
 }

@@ -16,6 +16,15 @@ export class GameState {
   /** 内部的にボーナスが当選しているかどうか（フラグ） */
   public hasBonusFlag: boolean = false;
 
+  /** 所持メダル（クレジット） */
+  public credits: number = 0;
+
+  /** 今回の払い出し枚数 */
+  public pay: number = 0;
+
+  /** 現在ベットされている枚数 */
+  public bet: number = 0;
+
   private constructor() {}
 
   /** シングルトンインスタンスを取得 */

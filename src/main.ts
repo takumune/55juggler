@@ -18,8 +18,7 @@ if (!appEl) {
 const renderer       = new CanvasRenderer(appEl);
 const reelController = new ReelController();
 
-// テスト: 初期状態で全リールを回転中にする
-reelController.startAll();
+// フェーズ1実装に伴い、初期状態での自動回転は停止しました。
 
 // ─────────────────────────────────────────
 // キーボード入力
@@ -43,6 +42,26 @@ window.addEventListener('keydown', (e: KeyboardEvent) => {
     case '3':
       reelController.stopReel(2); // 右
       break;
+    case 'm':
+    case 'ArrowUp':
+      // フェーズ1.4: サンド機能（メダル50枚投入）
+      gameState.credits += 50;
+      console.log(`[SYSTEM] メダルを追加: 現在 ${gameState.credits} 枚`);
+      break;
+    case 'b':
+    case 'Enter':
+      // フェーズ1.2: MAX BET (3枚掛け)
+      if (reelController.areAllStopped() && gameState.playState !== 'BONUS_GAME') {
+        const required = 3 - gameState.bet;
+        if (required > 0 && gameState.credits >= required) {
+          gameState.credits -= required;
+          gameState.bet = 3;
+          console.log('[SYSTEM] 3枚BET完了');
+        } else if (required > 0) {
+          console.log('[SYSTEM] クレジットが足りません');
+        }
+      }
+      break;
     case '0':
       // デバッグ機能: 強制的にボーナスフラグを立てる
       gameState.hasBonusFlag = true;
@@ -55,6 +74,15 @@ window.addEventListener('keydown', (e: KeyboardEvent) => {
           console.log('ボーナス消化中は現在未実装です');
           return;
         }
+
+        if (gameState.bet < 3) {
+          console.log('[SYSTEM] メダルを3枚BETしてください');
+          return;
+        }
+
+        // 次ゲーム開始時の初期化
+        gameState.bet = 0; // スピン開始で掛けたメダルを消費し状態リセット
+        gameState.pay = 0; // 前ゲームの払い出し表示をリセット
 
         // 内部抽選 (NORMAL 状態の時のみ)
         if (gameState.playState === 'NORMAL') {
