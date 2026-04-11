@@ -84,33 +84,78 @@ body {
 #bonus-lamp-container {
   position: absolute;
   /* 筐体画像のランプ位置に合わせて配置してください */
-  top: 45%;
-  left: 0%;
-  width: 50px;
-  height: 50px;
+  top: 47.5%;
+  left: 5.5%;
+  width: 40px;
+  height: 40px;
   z-index: 3;
-  transition: all 0.1s ease;
+  transition: all 0.3s ease;
   pointer-events: none;
-  /* クリックを邪魔しない */
+}
+
+/* ──── 点灯時のコンテナ状態 ──── */
+#bonus-lamp-container.on {
+  /* ... */
+}
+
+/* ──── 3連パズルピース ──── */
+.puzzle-lamp-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  /* 消灯時は筐体の闇に溶け込むように透明度とぼかしをわずかに付与 */
+  opacity: 0.3;
+  filter: brightness(0.6) blur(0.5px);
+  transition: all 0.3s ease;
+}
+
+#bonus-lamp-container.on .puzzle-lamp-svg {
+  opacity: 1;
+  filter: brightness(1) blur(0px);
 }
 
 /* ──── パズルピースの消灯時 ──── */
-.puzzle-lamp-svg path {
-  /* 消灯時の色：極めて見えにくく、かつプラスチックの質感がある暗緑色 */
-  fill: #001a00;
-  stroke: #0a220a;
-  stroke-width: 1;
+.puzzle-lamp-svg use {
+  /* 消灯時の境界線を細く黒くし、背景色との境界をぼかす */
+  stroke: rgba(0, 0, 0, 0.9);
+  stroke-width: 0.8;
+  stroke-linejoin: round;
   transition: all 0.15s ease;
 }
 
+.piece1 {
+  fill: #081100;
+}
+
+.piece2 {
+  fill: #001108;
+}
+
+.piece3 {
+  fill: #081100;
+}
+
 /* ──── 点灯状態（ON） ──── */
-#bonus-lamp-container.on .puzzle-lamp-svg path {
-  /* 鮮やかな緑色に発光 */
-  fill: #66ff66;
-  stroke: #b3ffb3;
-  stroke-width: 1.5;
-  /* ネオン特有の光の漏れ（ブラー）をdrop-shadowで表現 */
-  filter: drop-shadow(0 0 10px #22ff22) drop-shadow(0 0 30px #00ff00) drop-shadow(0 0 60px #00aa00);
+#bonus-lamp-container.on .puzzle-lamp-svg use {
+  stroke: #ffffff;
+  stroke-width: 2.5;
+}
+
+#bonus-lamp-container.on .piece1 {
+  fill: #ccff33;
+}
+
+#bonus-lamp-container.on .piece2 {
+  fill: #00dd44;
+}
+
+#bonus-lamp-container.on .piece3 {
+  fill: #77ff22;
+}
+
+#bonus-lamp-container.on .puzzle-lamp-svg {
+  /* 全体のネオン特有の光の漏れ（ブラー） */
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 15px #44ff44) drop-shadow(0 0 40px #00aa22);
   /* リアルなネオン管特有のごくわずかなチラつき */
   animation: neon-flicker-puzzle 2.5s infinite alternate;
 }
@@ -125,15 +170,15 @@ body {
   54%,
   56%,
   100% {
-    filter: drop-shadow(0 0 10px #22ff22) drop-shadow(0 0 30px #00ff00) drop-shadow(0 0 60px #00aa00);
-    fill: #66ff66;
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 15px #44ff44) drop-shadow(0 0 40px #00aa22);
+    opacity: 1;
   }
 
   20%,
   24%,
   55% {
-    filter: drop-shadow(0 0 5px #22ff22) drop-shadow(0 0 15px #00ff00);
-    fill: #44dd44;
+    filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.5)) drop-shadow(0 0 10px #22dd22);
+    opacity: 0.8;
   }
 }
 

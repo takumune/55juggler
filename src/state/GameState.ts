@@ -46,6 +46,9 @@ export class GameState {
   /** フェーズ6.1: ウェイト機能の有効/無効 */
   public isWaitEnabled: boolean = true;
 
+  /** 目押し補助（どこで押しても揃う）の有効/無効 */
+  public isAutoAssistEnabled: boolean = false;
+
   /** インターバル待ち中かどうか */
   public isWaiting: boolean = false;
 

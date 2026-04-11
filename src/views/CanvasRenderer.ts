@@ -5,6 +5,8 @@ import {
   SYMBOL_WIDTH, SYMBOL_HEIGHT,
   VISIBLE_ROWS, REEL_VIEW_HEIGHT,
   REEL_GAP, REEL_AREA_X, REEL_AREA_Y,
+  EXTRA_TOP_VISIBLE_RATIO,
+  REEL_RADIUS_SYMBOLS,
 } from '../constants/config';
 import type { ReelController } from '../logic/ReelController';
 import { gameState } from '../state/GameState';
@@ -26,13 +28,13 @@ const SYMBOL_STYLE: Record<SymbolType, { bg: string; fg: string; label: string }
 
 /** 読み込む画像アセットのパス (Phase 7.1/8.1) */
 const IMAGE_PATHS: Record<SymbolType, string> = {
-  '7': '/img/Seven.jpg',
-  'BAR': '/img/bar.jpg',
-  'REPLAY': '/img/REPLAY.jpg',
-  'GRAPE': '/img/grp.jpg',
-  'BELL': '/img/Bell.jpg',
-  'CHERRY': '/img/Cherry.jpg',
-  'CLOWN': '/img/clown.jpg',
+  '7': '/img/Seven.png',
+  'BAR': '/img/bar.png',
+  'REPLAY': '/img/Replay.png',
+  'GRAPE': '/img/grp.png',
+  'BELL': '/img/Bell.png',
+  'CHERRY': '/img/Cherry.png',
+  'CLOWN': '/img/clown.png',
 };
 
 const REEL_IDS: ReelId[] = ['left', 'center', 'right'];
@@ -82,17 +84,30 @@ export class CanvasRenderer {
   // ─────────────────────────────────────────
 
   /**
+   * 平面上のY座標を、円柱に張り付けたような遠近感(3D湾曲)のあるY座標に変換します。
+   */
+  private projectY(rawY: number): number {
+    const R = (REEL_RADIUS_SYMBOLS * SYMBOL_HEIGHT) / (Math.PI * 2); 
+    const centerY = REEL_AREA_Y + REEL_VIEW_HEIGHT / 2;
+    const d = rawY - centerY;
+    
+    // 裏側に回り込んでいる場合は近似値
+    if (d > R * 1.5 || d < -R * 1.5) return rawY;
+    
+    return centerY + R * Math.sin(d / R);
+  }
+
+  /**
    * 毎フレーム呼び出されるメイン描画メソッド。
    * @param _dt       デルタタイム (ms) ─ 将来のアニメーション用
    * @param reelCtrl  ReelController インスタンス（スクロール量の取得に使用）
    */
   render(_dt: number, reelCtrl: ReelController): void {
-    // リール窓全体を黒く塗りつぶす（リール間の隙間などを黒にするため）
-    this.ctx.fillStyle = '#111111'; // 真っ黒よりわずかに明るい黒
+    // 全体を暗号塗りつぶし（隙間の色）
+    this.ctx.fillStyle = '#111111';
     this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     
     this.drawReels(reelCtrl);
-    this.drawWinLine();
   }
 
   // ─────────────────────────────────────────
@@ -122,15 +137,36 @@ export class CanvasRenderer {
       const inv         = (TOTAL_STRIP_HEIGHT - scrollY % TOTAL_STRIP_HEIGHT) % TOTAL_STRIP_HEIGHT;
       const firstIndex  = Math.floor(inv / SYMBOL_HEIGHT) % REEL_LENGTH;
       const pixelOffset = inv % SYMBOL_HEIGHT;
+      const baseOffset  = SYMBOL_HEIGHT * EXTRA_TOP_VISIBLE_RATIO;
 
-      // VISIBLE_ROWS + 1 コマ描画（先頭が部分的に見えるコマ＋3コマ）
-      for (let r = 0; r <= VISIBLE_ROWS; r++) {
-        const symbolIndex = (firstIndex + r) % REEL_LENGTH;
+      // 少し余裕を持たせてより広い範囲を描画（湾曲で裏側が見えるため）
+      for (let r = -2; r <= VISIBLE_ROWS + 1; r++) {
+        const symbolIndex = (firstIndex + r + REEL_LENGTH) % REEL_LENGTH;
         const symbol      = REEL_CONFIG[id][symbolIndex];
         const drawX       = reelX;
-        const drawY       = REEL_AREA_Y + r * SYMBOL_HEIGHT - pixelOffset;
-        this.drawSymbol(symbol, drawX, drawY);
+        
+        // 平面上の上端と下端のY座標
+        const rawTop      = REEL_AREA_Y + baseOffset + r * SYMBOL_HEIGHT - pixelOffset;
+        const rawBottom   = rawTop + SYMBOL_HEIGHT;
+        
+        // 湾曲投影して、画面上での描画位置と潰れた高さを算出
+        const screenTop    = this.projectY(rawTop);
+        const screenBottom = this.projectY(rawBottom);
+        const drawHeight   = Math.max(0.1, screenBottom - screenTop); // 最小高さを確保
+
+        this.drawSymbol(symbol, drawX, screenTop, drawHeight);
       }
+
+      // ──── 立体感を出すための円柱シャドウ（グラデーション） ────
+      const grad = this.ctx.createLinearGradient(0, REEL_AREA_Y, 0, REEL_AREA_Y + REEL_VIEW_HEIGHT);
+      grad.addColorStop(0.00, 'rgba(0, 0, 0, 0.7)'); // 上部の暗がり
+      grad.addColorStop(0.15, 'rgba(0, 0, 0, 0.2)');
+      grad.addColorStop(0.50, 'rgba(255, 255, 255, 0.1)'); // 中央のハイライト
+      grad.addColorStop(0.85, 'rgba(0, 0, 0, 0.2)');
+      grad.addColorStop(1.00, 'rgba(0, 0, 0, 0.7)'); // 下部の暗がり
+      
+      this.ctx.fillStyle = grad;
+      this.ctx.fillRect(reelX, REEL_AREA_Y, SYMBOL_WIDTH, REEL_VIEW_HEIGHT);
 
       // フェーズ6.3: フラッシュ演出 (バックライトのように全ての図柄の上から重ねることで視認性を上げる)
       if (Date.now() < gameState.flashEndTime) {
@@ -149,52 +185,47 @@ export class CanvasRenderer {
    * 1コマ分の図柄を描画する。
    * 画像が読み込まれていれば画像を描画し、そうでない場合はフォールバックのテキストを描画する。
    */
-  private drawSymbol(symbol: SymbolType, x: number, y: number): void {
+  private drawSymbol(symbol: SymbolType, x: number, y: number, height: number = SYMBOL_HEIGHT): void {
     const img = this.imageAssets[symbol];
+    const scaleY = height / SYMBOL_HEIGHT;
 
     if (img && img.complete) {
       // リール帯の背景色を敷く
       this.ctx.fillStyle = '#f4f4f4';
-      this.ctx.fillRect(x, y, SYMBOL_WIDTH, SYMBOL_HEIGHT);
+      this.ctx.fillRect(x, y, SYMBOL_WIDTH, height);
 
       // 7やBARは大きく、小役は小さく表示するためのパディング設定
-      let padX = 0;
-      let padY = 0;
-      
-      if (symbol === '7' || symbol === 'BAR') {
-        padX = 5;
-        padY = 2;
-      } else {
-        padX = 30; // 横幅をぐっと絞る
-        padY = 6;  // 縦幅も少し絞る
-      }
+      const isLarge = symbol === '7' || symbol === 'BAR';
+      const padX = isLarge ? 4 : 16;
+      const padY = isLarge ? 4 : 10;
+      const scaledPadY = padY * scaleY;
 
-      // ユーザー追加画像を描画（パディングを考慮）
-      this.ctx.drawImage(img, x + padX, y + padY, SYMBOL_WIDTH - padX * 2, SYMBOL_HEIGHT - padY * 2);
+      // 描画（リール窓の幅に合わせるため少し拡大縮小がかかる）
+      this.ctx.drawImage(img, x + padX, y + scaledPadY, SYMBOL_WIDTH - padX * 2, height - scaledPadY * 2);
       
       // 文字盤の境目を見やすくるためのごく薄い線
       this.ctx.strokeStyle = 'rgba(0,0,0,0.05)';
       this.ctx.lineWidth   = 1;
-      this.ctx.strokeRect(x, y, SYMBOL_WIDTH, SYMBOL_HEIGHT);
+      this.ctx.strokeRect(x, y, SYMBOL_WIDTH, height);
     } else {
       // フォールバック処理
       const style = SYMBOL_STYLE[symbol];
 
       // 背景
       this.ctx.fillStyle = style.bg;
-      this.ctx.fillRect(x, y, SYMBOL_WIDTH, SYMBOL_HEIGHT);
+      this.ctx.fillRect(x, y, SYMBOL_WIDTH, height);
 
       // 内枠ハイライト（上辺のみ明るく）
       this.ctx.strokeStyle = 'rgba(255,255,255,0.07)';
       this.ctx.lineWidth   = 1;
-      this.ctx.strokeRect(x + 0.5, y + 0.5, SYMBOL_WIDTH - 1, SYMBOL_HEIGHT - 1);
+      this.ctx.strokeRect(x + 0.5, y + 0.5, SYMBOL_WIDTH - 1, height - 1);
 
       // ラベルテキスト
       this.ctx.fillStyle    = style.fg;
       this.ctx.font         = 'bold 22px "Courier New", monospace';
       this.ctx.textAlign    = 'center';
       this.ctx.textBaseline = 'middle';
-      this.ctx.fillText(style.label, x + SYMBOL_WIDTH / 2, y + SYMBOL_HEIGHT / 2);
+      this.ctx.fillText(style.label, x + SYMBOL_WIDTH / 2, y + height / 2);
     }
   }
 
@@ -205,31 +236,18 @@ export class CanvasRenderer {
   private drawRowSeparators(reelX: number): void {
     this.ctx.strokeStyle = 'rgba(0,0,0,0.1)'; // 薄いグレーの境目
     this.ctx.lineWidth   = 1;
-    for (let row = 1; row < VISIBLE_ROWS; row++) {
-      const lineY = REEL_AREA_Y + row * SYMBOL_HEIGHT;
-      this.ctx.beginPath();
-      this.ctx.moveTo(reelX,                  lineY);
-      this.ctx.lineTo(reelX + SYMBOL_WIDTH,   lineY);
-      this.ctx.stroke();
+    const baseOffset = SYMBOL_HEIGHT * EXTRA_TOP_VISIBLE_RATIO;
+    
+    for (let row = -1; row <= VISIBLE_ROWS; row++) {
+      const lineY = REEL_AREA_Y + baseOffset + row * SYMBOL_HEIGHT;
+      // リール表示領域内におさまる境界線だけ描画
+      if (lineY > REEL_AREA_Y && lineY < REEL_AREA_Y + REEL_VIEW_HEIGHT) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(reelX, lineY);
+        this.ctx.lineTo(reelX + SYMBOL_WIDTH, lineY);
+        this.ctx.stroke();
+      }
     }
   }
 
-  // ─────────────────────────────────────────
-  // プライベート：リール枠・ライン
-  // ─────────────────────────────────────────
-
-  /**
-   * 入賞ライン（中段）を両サイドのマーカーで示す。
-   */
-  private drawWinLine(): void {
-    const midY     = REEL_AREA_Y + SYMBOL_HEIGHT + SYMBOL_HEIGHT / 2;
-    const markerW  = 10;
-    const markerH  = 4;
-
-    this.ctx.fillStyle = '#ff4444';
-    // 左マーカー
-    this.ctx.fillRect(0, midY - markerH / 2, markerW, markerH);
-    // 右マーカー
-    this.ctx.fillRect(CANVAS_WIDTH - markerW, midY - markerH / 2, markerW, markerH);
-  }
 }

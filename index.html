@@ -17,13 +17,23 @@
       <!-- UI (キャンバス外に配置) -->
       <div id="bonus-lamp-container">
         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" class="puzzle-lamp-svg">
-          <g transform="rotate(50, 50, 50)">
-            <!-- パズルピース型パス (Top: 凹, Right: 凸, Bottom: 凹, Left: 凸) -->
-            <path d="M 25,25 
-                       L 38,25 A 13,13 0 1,1 62,25 L 75,25 
-                       L 75,38 A 13,13 0 1,0 75,62 L 75,75 
-                       L 62,75 A 13,13 0 1,1 38,75 L 25,75 
-                       L 25,62 A 13,13 0 1,0 25,38 Z" />
+          <defs>
+            <!-- 基本となるパズルのピース形状 -->
+            <path id="jigsaw" d="M -20,-20 
+                     L -6,-20 A 7,7 0 1,1 6,-20 L 20,-20 
+                     L 20,-6 A 7,7 0 1,0 20,6 L 20,20 
+                     L 6,20 A 7,7 0 1,1 -6,20 L -20,20 
+                     L -20,6 A 7,7 0 1,0 -20,-6 Z" />
+          </defs>
+          <g transform="translate(0, 100) scale(1, -1)">
+            <g transform="scale(0.8) translate(15, 15) rotate(-25, 55, 55)">
+              <!-- ピース1 (左上): 黄緑色 -->
+              <use href="#jigsaw" transform="translate(35, 35)" class="piece1" />
+              <!-- ピース3 (右上): 中間緑（ピース1の右に結合） -->
+              <use href="#jigsaw" transform="translate(75, 35) rotate(-90)" class="piece3" />
+              <!-- ピース2 (左下): 深緑色（ピース1の下に結合） -->
+              <use href="#jigsaw" transform="translate(35, 75) rotate(90)" class="piece2" />
+            </g>
           </g>
         </svg>
       </div>
@@ -44,10 +54,12 @@
         <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd>：手動ストップ&nbsp;&nbsp;|&nbsp;&nbsp;
         <kbd>s</kbd>：設定変更 (1〜6, X)
       </p>
-      <p style="font-size: 12px; margin-top: 5px; color: #777;">
-        <kbd>0</kbd>：[デバッグ] 強制ボーナスフラグ
+      <p style="font-size: 11px; margin-top: 5px; color: #888;">
+        <kbd>0</kbd>：強制ペカ
         &nbsp;&nbsp;|&nbsp;&nbsp;
-        <label><input type="checkbox" id="wait-toggle" checked> ウェイト(4.1秒)有効</label>
+        <label><input type="checkbox" id="wait-toggle" checked> ウェイト有効</label>
+        &nbsp;&nbsp;|&nbsp;&nbsp;
+        <label><input type="checkbox" id="assist-toggle"> 目押し補助(強制)有効</label>
       </p>
     </div>
   </div>

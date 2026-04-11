@@ -32,6 +32,14 @@ if (waitToggleEl) {
   });
 }
 
+const assistToggleEl = document.getElementById('assist-toggle') as HTMLInputElement | null;
+if (assistToggleEl) {
+  assistToggleEl.addEventListener('change', (e) => {
+    gameState.isAutoAssistEnabled = (e.target as HTMLInputElement).checked;
+    console.log(`[SYSTEM] 目押し補助を ${gameState.isAutoAssistEnabled ? 'ON' : 'OFF'} にしました。`);
+  });
+}
+
 // ─────────────────────────────────────────
 // キーボード入力
 // ─────────────────────────────────────────

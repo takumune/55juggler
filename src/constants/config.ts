@@ -65,11 +65,33 @@ export const REEL_CONFIG: Record<'left' | 'center' | 'right', SymbolType[]> = {
 export const SYMBOL_WIDTH = 140;
 export const SYMBOL_HEIGHT = 65;
 
-/** 1リールに表示するコマ数（上・中・下） */
+/** 1リールに完全に表示するコマ数（上・中・下） */
 export const VISIBLE_ROWS = 3;
 
+/** 
+ * 実機のように、上段図柄のさらに上の図柄を「何割見切れさせるか」の比率 (0.0 〜 1.0) 
+ * 0.3 にすると、最上部に一つ上の図柄の約3割が見えます。
+ */
+export const EXTRA_TOP_VISIBLE_RATIO = 0.2;
+
+/** 
+ * さらに下段図柄の下に「何割見切れさせるか」 
+ * 0 にすると最下段でぴったり切れます。
+ */
+export const EXTRA_BOTTOM_VISIBLE_RATIO = 0.05;
+
 /** リール表示エリアの高さ (px) */
-export const REEL_VIEW_HEIGHT = SYMBOL_HEIGHT * VISIBLE_ROWS;
+export const REEL_VIEW_HEIGHT = SYMBOL_HEIGHT * (VISIBLE_ROWS + EXTRA_TOP_VISIBLE_RATIO + EXTRA_BOTTOM_VISIBLE_RATIO);
+
+/** 
+ * リールの「湾曲（曲がり）具合」の強さ
+ * 実機の円筒を再現するための仮想的な半径（何コマ分の円周か）です。
+ * 
+ * - 基準値: 18 （実機に近い自然な遠近感）
+ * - 値を小さく(12等)すると: より強く急激に湾曲し、上下が強く潰れて見えます。
+ * - 値を大きく(30等)すると: 湾曲がゆるやかになり、フラット（平面）に近づきます。
+ */
+export const REEL_RADIUS_SYMBOLS = 30;
 
 /**
  * リール間のギャップ (px)

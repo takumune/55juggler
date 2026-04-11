@@ -208,13 +208,14 @@ export class ReelController {
     else if (flag === 'CLOWN') targetSymbol = 'CLOWN';
     else if (flag === 'CHERRY') targetSymbol = 'CHERRY';
 
-    // 1. 当選役がある場合、0コマ〜4コマ滑りの範囲で引き込みを試みる (3.1)
+    // 1. 当選役がある場合、0コマ〜最大滑りコマ数の範囲で引き込みを試みる
     if (targetSymbol) {
-      for (let slip = 0; slip <= 4; slip++) {
+      const maxSlip = gameState.isAutoAssistEnabled ? REEL_LENGTH - 1 : 4;
+      for (let slip = 0; slip <= maxSlip; slip++) {
         const candidateFirstIndex = (currentFirstIndex - slip + REEL_LENGTH) % REEL_LENGTH;
         const candidateCenterIndex = (candidateFirstIndex + 1) % REEL_LENGTH;
         if (REEL_CONFIG[id][candidateCenterIndex] === targetSymbol) {
-          // 引き込める位置だが、他の誤爆（偶然当たっていない別役が揃う）がないか確認 (3.2連携)
+          // 引き込める位置だが、他の誤爆（偶然当たっていない別役が揃う）がないか確認
           if (!this.wouldFormUnauthorizedWin(reelIndex, slip, currentFirstIndex)) {
             return slip; 
           }
