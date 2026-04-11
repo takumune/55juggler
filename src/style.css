@@ -58,7 +58,7 @@ body {
 #app {
   /* フェーズ8.2: 筐体画像のリール窓の位置に合わせて配置 */
   position: absolute;
-  top: 36%;
+  top: 41.5%;
   /* この数値をブラウザで見ながら調整してください */
   left: 50%;
   transform: translate(-50%, -50%);

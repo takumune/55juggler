@@ -1,10 +1,8 @@
 import type { SymbolType } from '../types';
 
 // ─────────────────────────────────────────
-// 画面・キャンバス設定
+// 画面・キャンバス設定 (下部のリール幅に基づいて後で自動計算されます)
 // ─────────────────────────────────────────
-export const CANVAS_WIDTH = 429;
-export const CANVAS_HEIGHT = 144;
 
 // ─────────────────────────────────────────
 // ゲームループ設定
@@ -39,17 +37,17 @@ export const REEL_LENGTH = 21;
 
 export const REEL_CONFIG: Record<'left' | 'center' | 'right', SymbolType[]> = {
   left: [
-    'BELL', '7',    'REPLAY', 'GRAPE', 'REPLAY', 'GRAPE', 'BAR',   'CHERRY',
-    'GRAPE', 'REPLAY', 'GRAPE', '7',   'CLOWN',  'GRAPE', 'REPLAY', 'GRAPE',
+    'BELL', '7', 'REPLAY', 'GRAPE', 'REPLAY', 'GRAPE', 'BAR', 'CHERRY',
+    'GRAPE', 'REPLAY', 'GRAPE', '7', 'CLOWN', 'GRAPE', 'REPLAY', 'GRAPE',
     'CHERRY', 'BAR', 'GRAPE', 'REPLAY', 'GRAPE',
   ],
   center: [
-    'REPLAY', '7',    'GRAPE', 'CHERRY', 'REPLAY', 'BELL',  'GRAPE', 'CHERRY',
-    'REPLAY', 'BAR',  'GRAPE', 'CHERRY', 'REPLAY', 'BELL',  'GRAPE', 'CHERRY',
-    'REPLAY', 'BAR',  'GRAPE', 'CHERRY', 'CLOWN',
+    'REPLAY', '7', 'GRAPE', 'CHERRY', 'REPLAY', 'BELL', 'GRAPE', 'CHERRY',
+    'REPLAY', 'BAR', 'GRAPE', 'CHERRY', 'REPLAY', 'BELL', 'GRAPE', 'CHERRY',
+    'REPLAY', 'BAR', 'GRAPE', 'CHERRY', 'CLOWN',
   ],
   right: [
-    'GRAPE', '7',    'BAR',   'BELL',  'REPLAY', 'GRAPE', 'CLOWN', 'BELL',
+    'GRAPE', '7', 'BAR', 'BELL', 'REPLAY', 'GRAPE', 'CLOWN', 'BELL',
     'REPLAY', 'GRAPE', 'CLOWN', 'BELL', 'REPLAY', 'GRAPE', 'CLOWN', 'BELL',
     'REPLAY', 'GRAPE', 'CLOWN', 'BELL', 'REPLAY',
   ],
@@ -59,27 +57,35 @@ export const REEL_CONFIG: Record<'left' | 'center' | 'right', SymbolType[]> = {
 // リール描画設定
 // ─────────────────────────────────────────
 
-/** 1コマあたりのサイズ (px) */
-export const SYMBOL_WIDTH = 139;
-export const SYMBOL_HEIGHT = 48;
+/**
+ * 1コマあたりのサイズ (px)
+ * 横幅を変えたい場合は SYMBOL_WIDTH を変更します。
+ * 【リールの縦幅（高さ）を変えたい場合は SYMBOL_HEIGHT を変更してください】
+ */
+export const SYMBOL_WIDTH = 140;
+export const SYMBOL_HEIGHT = 65;
 
 /** 1リールに表示するコマ数（上・中・下） */
 export const VISIBLE_ROWS = 3;
 
-/** リール表示エリアの高さ (px) = 1コマ × 表示コマ数 */
+/** リール表示エリアの高さ (px) */
 export const REEL_VIEW_HEIGHT = SYMBOL_HEIGHT * VISIBLE_ROWS;
 
-/** リール間のギャップ (px) */
-export const REEL_GAP = 6;
+/**
+ * リール間のギャップ (px)
+ * 【リールの左右の間隔を調整する場合は、この数値を変更してください】
+ */
+export const REEL_GAP = 20;
 
 /** リール数 */
 export const REEL_COUNT = 3;
 
-/**
- * 3本のリールをまとめた表示エリアの幅 (px)。
- * リール幅 × 本数 + ギャップ × (本数 - 1)
- */
+/** 3本のリールをまとめた表示エリアの幅 (px) */
 export const REEL_AREA_WIDTH = SYMBOL_WIDTH * REEL_COUNT + REEL_GAP * (REEL_COUNT - 1);
+
+// キャンバス自体のサイズをリール表示エリアのサイズに自動追従させる
+export const CANVAS_WIDTH = REEL_AREA_WIDTH;
+export const CANVAS_HEIGHT = REEL_VIEW_HEIGHT;
 
 /**
  * リール表示エリアの左上起点 X 座標（キャンバス中央揃え）。

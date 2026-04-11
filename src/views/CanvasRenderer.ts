@@ -87,8 +87,9 @@ export class CanvasRenderer {
    * @param reelCtrl  ReelController インスタンス（スクロール量の取得に使用）
    */
   render(_dt: number, reelCtrl: ReelController): void {
-    // 全体を透明にクリア（背景の筐体画像を見せるため）
-    this.ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    // リール窓全体を黒く塗りつぶす（リール間の隙間などを黒にするため）
+    this.ctx.fillStyle = '#111111'; // 真っ黒よりわずかに明るい黒
+    this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     
     this.drawReels(reelCtrl);
     this.drawWinLine();
@@ -112,7 +113,7 @@ export class CanvasRenderer {
       this.ctx.rect(reelX, REEL_AREA_Y, SYMBOL_WIDTH, REEL_VIEW_HEIGHT);
       this.ctx.clip();
 
-      // リール背景 (通常: スロット筐体特有の白いリール帯)
+      // リール背景 (白いリール帯)
       this.ctx.fillStyle = '#f4f4f4';
       this.ctx.fillRect(reelX, REEL_AREA_Y, SYMBOL_WIDTH, REEL_VIEW_HEIGHT);
 
@@ -202,7 +203,7 @@ export class CanvasRenderer {
    * （clip 解除後に呼ぶこと）
    */
   private drawRowSeparators(reelX: number): void {
-    this.ctx.strokeStyle = 'rgba(0,0,0,0.1)'; // 白いリール帯に合わせた薄いグレーの境目
+    this.ctx.strokeStyle = 'rgba(0,0,0,0.1)'; // 薄いグレーの境目
     this.ctx.lineWidth   = 1;
     for (let row = 1; row < VISIBLE_ROWS; row++) {
       const lineY = REEL_AREA_Y + row * SYMBOL_HEIGHT;
