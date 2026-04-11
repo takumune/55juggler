@@ -1,43 +1,57 @@
 <!doctype html>
 <html lang="ja">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" href="data:," />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>55juggler</title>
-  </head>
-  <body>
-    <div class="wrapper">
-      <div id="machine-wrapper">
-        <img id="kyotai-img" src="/img/kyutai2.png" alt="slot machine" />
-        <div id="app"></div>
-        
-        <!-- UI (キャンバス外に配置) -->
-        <div id="bonus-lamp">GOGO!</div>
-        <div class="digital-display" id="credit-display">CREDIT: 0</div>
-        <div class="digital-display" id="pay-display">PAY: 0</div>
-        <div class="digital-display" id="bet-display">BET: 0</div>
-        <div class="digital-display" id="setting-display">SETTING: 6</div>
-        <div class="digital-display" id="bonus-pay-display" style="display: none;"></div>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" href="data:," />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>55juggler</title>
+</head>
+
+<body>
+  <div class="wrapper">
+    <div id="machine-wrapper">
+      <img id="kyotai-img" src="/img/kyutai2.png" alt="slot machine" />
+      <div id="app"></div>
+
+      <!-- UI (キャンバス外に配置) -->
+      <div id="bonus-lamp-container">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" class="puzzle-lamp-svg">
+          <g transform="rotate(50, 50, 50)">
+            <!-- パズルピース型パス (Top: 凹, Right: 凸, Bottom: 凹, Left: 凸) -->
+            <path d="M 25,25 
+                       L 38,25 A 13,13 0 1,1 62,25 L 75,25 
+                       L 75,38 A 13,13 0 1,0 75,62 L 75,75 
+                       L 62,75 A 13,13 0 1,1 38,75 L 25,75 
+                       L 25,62 A 13,13 0 1,0 25,38 Z" />
+          </g>
+        </svg>
       </div>
-      <div id="instructions">
-        <p><strong>【 操作方法 】</strong></p>
-        <p>
-          <kbd>↑</kbd>：メダル追加 (50枚)&nbsp;&nbsp;|&nbsp;&nbsp;
-          <kbd>Space</kbd>：オートBET ＆ 回転 ＆ 順押しストップ
-        </p>
-        <p>
-          <kbd>Enter</kbd>：手動BET&nbsp;&nbsp;|&nbsp;&nbsp;
-          <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd>：手動ストップ&nbsp;&nbsp;|&nbsp;&nbsp;
-          <kbd>s</kbd>：設定変更 (1〜6, X)
-        </p>
-        <p style="font-size: 12px; margin-top: 5px; color: #777;">
-          <kbd>0</kbd>：[デバッグ] 強制ボーナスフラグ
-          &nbsp;&nbsp;|&nbsp;&nbsp;
-          <label><input type="checkbox" id="wait-toggle" checked> ウェイト(4.1秒)有効</label>
-        </p>
-      </div>
+      <div class="digital-display" id="credit-display">CREDIT: 0</div>
+      <div class="digital-display" id="pay-display">PAY: 0</div>
+      <div class="digital-display" id="bet-display">BET: 0</div>
+      <div class="digital-display" id="setting-display">SETTING: 6</div>
+      <div class="digital-display" id="bonus-pay-display" style="display: none;"></div>
     </div>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+    <div id="instructions">
+      <p><strong>【 操作方法 】</strong></p>
+      <p>
+        <kbd>↑</kbd>：メダル追加 (50枚)&nbsp;&nbsp;|&nbsp;&nbsp;
+        <kbd>Space</kbd>：オートBET ＆ 回転 ＆ 順押しストップ
+      </p>
+      <p>
+        <kbd>Enter</kbd>：手動BET&nbsp;&nbsp;|&nbsp;&nbsp;
+        <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd>：手動ストップ&nbsp;&nbsp;|&nbsp;&nbsp;
+        <kbd>s</kbd>：設定変更 (1〜6, X)
+      </p>
+      <p style="font-size: 12px; margin-top: 5px; color: #777;">
+        <kbd>0</kbd>：[デバッグ] 強制ボーナスフラグ
+        &nbsp;&nbsp;|&nbsp;&nbsp;
+        <label><input type="checkbox" id="wait-toggle" checked> ウェイト(4.1秒)有効</label>
+      </p>
+    </div>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
 </html>

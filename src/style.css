@@ -79,22 +79,64 @@ body {
 /* =========================================
    UI Overlay Elements
    ========================================= */
-#bonus-lamp {
+
+/* GOGOランプ（今回はパズル形状）の実機のような質感と光を再現 */
+#bonus-lamp-container {
   position: absolute;
-  bottom: 12%;
-  left: 10%;
-  font-size: 28px;
-  font-weight: bold;
-  font-family: "Courier New", monospace;
-  color: #222;
+  /* 筐体画像のランプ位置に合わせて配置してください */
+  top: 45%;
+  left: 0%;
+  width: 50px;
+  height: 50px;
   z-index: 3;
-  transition: all 0.1s;
+  transition: all 0.1s ease;
+  pointer-events: none;
+  /* クリックを邪魔しない */
 }
 
-#bonus-lamp.on {
-  color: #ff00ff;
-  text-shadow: 0 0 20px #ff22ff, 0 0 40px #ff22ff;
+/* ──── パズルピースの消灯時 ──── */
+.puzzle-lamp-svg path {
+  /* 消灯時の色：極めて見えにくく、かつプラスチックの質感がある暗緑色 */
+  fill: #001a00;
+  stroke: #0a220a;
+  stroke-width: 1;
+  transition: all 0.15s ease;
 }
+
+/* ──── 点灯状態（ON） ──── */
+#bonus-lamp-container.on .puzzle-lamp-svg path {
+  /* 鮮やかな緑色に発光 */
+  fill: #66ff66;
+  stroke: #b3ffb3;
+  stroke-width: 1.5;
+  /* ネオン特有の光の漏れ（ブラー）をdrop-shadowで表現 */
+  filter: drop-shadow(0 0 10px #22ff22) drop-shadow(0 0 30px #00ff00) drop-shadow(0 0 60px #00aa00);
+  /* リアルなネオン管特有のごくわずかなチラつき */
+  animation: neon-flicker-puzzle 2.5s infinite alternate;
+}
+
+@keyframes neon-flicker-puzzle {
+
+  0%,
+  19%,
+  21%,
+  23%,
+  25%,
+  54%,
+  56%,
+  100% {
+    filter: drop-shadow(0 0 10px #22ff22) drop-shadow(0 0 30px #00ff00) drop-shadow(0 0 60px #00aa00);
+    fill: #66ff66;
+  }
+
+  20%,
+  24%,
+  55% {
+    filter: drop-shadow(0 0 5px #22ff22) drop-shadow(0 0 15px #00ff00);
+    fill: #44dd44;
+  }
+}
+
 
 .digital-display {
   position: absolute;

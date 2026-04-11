@@ -197,7 +197,7 @@ function updateDOMUI(): void {
   const setEl = document.getElementById('setting-display');
   if (setEl) setEl.textContent = `SETTING: ${gameState.setting}`;
   
-  const lampEl = document.getElementById('bonus-lamp');
+  const lampEl = document.getElementById('bonus-lamp-container');
   if (lampEl) {
     if (gameState.isGogoLampOn) lampEl.classList.add('on');
     else lampEl.classList.remove('on');
