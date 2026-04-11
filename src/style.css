@@ -32,9 +32,10 @@ body {
    ========================================= */
 .wrapper {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
+  flex-direction: row;
+  align-items: stretch;  /* 左右パネルを機体と同じ高さに伸ばす */
+  justify-content: center;
+  gap: 16px;
 }
 
 #machine-wrapper {
@@ -183,6 +184,80 @@ body {
 }
 
 
+/* =========================================
+   LEDセグメント風デジタル表示パネル
+   ========================================= */
+
+/* ── 共通スタイル ── */
+.led-panel {
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  /* 黒いパネル背景 */
+  background: #000;
+  border: 1px solid #222;
+  border-radius: 2px;
+  padding: 0;
+  /* 余白なし */
+  line-height: 1;
+}
+
+/* ラベル (CREDIT / COUNT / PAYOUT) */
+.led-label {
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: #444;
+  text-transform: uppercase;
+  line-height: 1;
+  margin-bottom: 1px;
+}
+
+/* 数値 */
+.led-value {
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  font-size: 22px;
+  font-weight: normal;
+  letter-spacing: 1px;
+  /* 文字間も最小限 */
+  line-height: 1;
+  /* 発光する赤色 */
+  color: #ff2222;
+  text-shadow:
+    0 0 4px rgba(255, 50, 50, 1),
+    0 0 12px rgba(255, 30, 30, 0.8),
+    0 0 24px rgba(200, 0, 0, 0.5);
+}
+
+/* ── 個別の位置設定（ここを変更してください） ── */
+
+/* CREDIT パネル */
+#led-credit {
+  top: 56.6%;
+  /* ◀ 上下位置 */
+  left: 36%;
+  /* ◀ 左右位置 */
+}
+
+/* COUNT パネル */
+#led-count {
+  top: 56.6%;
+  left: 50.5%;
+  transform: translateX(-50%);
+  /* 中央に配置 */
+}
+
+/* PAYOUT パネル */
+#led-payout {
+  top: 56.6%;
+  right: 35.3%;
+  /* ◀ 左右位置（右からの距離） */
+}
+
 .digital-display {
   position: absolute;
   font-family: "Courier New", monospace;
@@ -227,17 +302,21 @@ body {
 #instructions {
   color: #aaaaaa;
   font-family: "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
-  text-align: center;
+  text-align: left;
   background: #1a1a1a;
-  padding: 15px 25px;
+  padding: 14px 16px;
   border-radius: 8px;
   border: 1px solid #333;
-  line-height: 1.8;
-  font-size: 14px;
+  line-height: 2;
+  font-size: 12px;
+  align-self: stretch;
+  flex: 1;           /* 横方向に伸びる */
+  min-width: 120px;
 }
 
 #instructions p {
-  margin-bottom: 8px;
+  margin-bottom: 4px;
+  white-space: nowrap;
 }
 
 #instructions p:last-child {
@@ -247,8 +326,117 @@ body {
 #instructions kbd {
   background: #333;
   color: #fff;
-  padding: 4px 8px;
+  padding: 2px 6px;
   border-radius: 4px;
   font-family: "Courier New", monospace;
   font-weight: bold;
+  font-size: 11px;
+}
+
+/* =========================================
+   データカウンター
+   ========================================= */
+#data-counter {
+  align-self: stretch;
+  flex: 1;
+  background: #080808;
+  border: 1px solid #1a1a1a;
+  border-radius: 6px;
+  padding: 10px 12px;
+  min-width: 200px;
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+
+  /* 子要素を縦に並べて、履歴を伸ばす */
+  display: flex;
+  flex-direction: column;
+}
+
+.dc-title {
+  color: #444;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-align: center;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #1e1e1e;
+  padding-bottom: 4px;
+}
+
+.dc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+
+.dc-label {
+  color: #555;
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+.dc-value {
+  color: #22ff66;
+  font-size: 18px;
+  letter-spacing: 2px;
+  text-shadow:
+    0 0 4px rgba(34, 255, 100, 0.8),
+    0 0 12px rgba(34, 255, 100, 0.4);
+}
+
+#slump-graph {
+  display: block;
+  margin-top: 10px;
+  border: 1px solid #1a1a1a;
+  border-radius: 3px;
+  width: 100%;
+}
+
+#win-history-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+#win-history-list {
+  flex: 1;
+  overflow-y: auto;
+  background: #000;
+  border: 1px solid #111;
+  border-radius: 4px;
+  padding: 6px;
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 4px;
+  border-bottom: 1px solid #0a0a0a;
+  font-size: 11px;
+}
+
+.history-game {
+  color: #555;
+  margin-right: 12px;
+}
+
+.history-role {
+  font-weight: bold;
+}
+
+.history-role.BIG { color: #ff2222; }
+.history-role.REG { color: #ffff33; }
+.history-role.GRAPE { color: #22ff66; }
+.history-role.CHERRY { color: #ff66aa; }
+.history-role.REPLAY { color: #44aaff; }
+.history-role.MISS { color: #555; }
+
+/* スクロールバーのカスタマイズ */
+#win-history-list::-webkit-scrollbar {
+  width: 4px;
+}
+#win-history-list::-webkit-scrollbar-thumb {
+  background: #222;
+  border-radius: 2px;
 }

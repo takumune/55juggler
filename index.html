@@ -10,6 +10,34 @@
 
 <body>
   <div class="wrapper">
+    <div id="instructions">
+      <p><strong>「 操作方法 」</strong></p>
+      <p><kbd>↑</kbd>：メダル追加 (50枚)</p>
+      <p><kbd>Space</kbd>：オートBET &amp; 回転 &amp; 順押ST</p>
+      <p><kbd>Enter</kbd>：手動BET</p>
+      <p><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd>：手動ST</p>
+      <p style="margin-top: 10px;">
+        設定変更: 
+        <select id="setting-select" style="background: #222; color: #fff; border: 1px solid #444; border-radius: 4px; padding: 2px 4px;">
+          <option value="1">設定1</option>
+          <option value="2">設定2</option>
+          <option value="3">設定3</option>
+          <option value="4">設定4</option>
+          <option value="5">設定5</option>
+          <option value="6" selected>設定6</option>
+        </select>
+      </p>
+      <p style="margin-top: 8px; border-top: 1px solid #333; padding-top: 8px;">
+        <kbd>0</kbd>：強制ペカ
+      </p>
+      <p>
+        <label><input type="checkbox" id="wait-toggle" checked> ウェイト有効</label>
+      </p>
+      <p>
+        <label><input type="checkbox" id="assist-toggle"> 目押し補助(強制)有効</label>
+      </p>
+    </div>
+
     <div id="machine-wrapper">
       <img id="kyotai-img" src="/img/kyutai2.png" alt="slot machine" />
       <div id="app"></div>
@@ -37,30 +65,56 @@
           </g>
         </svg>
       </div>
-      <div class="digital-display" id="credit-display">CREDIT: 0</div>
-      <div class="digital-display" id="pay-display">PAY: 0</div>
-      <div class="digital-display" id="bet-display">BET: 0</div>
-      <div class="digital-display" id="setting-display">SETTING: 6</div>
+
       <div class="digital-display" id="bonus-pay-display" style="display: none;"></div>
+
+      <!-- LEDセグメント風デジタル表示パネル（位置はCSSで個別調整） -->
+      <div class="led-panel" id="led-credit">
+        <span class="led-value" id="led-credit-val">00</span>
+      </div>
+      <div class="led-panel" id="led-count">
+        <span class="led-value" id="led-count-val">000</span>
+      </div>
+      <div class="led-panel" id="led-payout">
+        <span class="led-value" id="led-payout-val">00</span>
+      </div>
     </div>
-    <div id="instructions">
-      <p><strong>【 操作方法 】</strong></p>
-      <p>
-        <kbd>↑</kbd>：メダル追加 (50枚)&nbsp;&nbsp;|&nbsp;&nbsp;
-        <kbd>Space</kbd>：オートBET ＆ 回転 ＆ 順押しストップ
-      </p>
-      <p>
-        <kbd>Enter</kbd>：手動BET&nbsp;&nbsp;|&nbsp;&nbsp;
-        <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd>：手動ストップ&nbsp;&nbsp;|&nbsp;&nbsp;
-        <kbd>s</kbd>：設定変更 (1〜6, X)
-      </p>
-      <p style="font-size: 11px; margin-top: 5px; color: #888;">
-        <kbd>0</kbd>：強制ペカ
-        &nbsp;&nbsp;|&nbsp;&nbsp;
-        <label><input type="checkbox" id="wait-toggle" checked> ウェイト有効</label>
-        &nbsp;&nbsp;|&nbsp;&nbsp;
-        <label><input type="checkbox" id="assist-toggle"> 目押し補助(強制)有効</label>
-      </p>
+
+    <!-- データカウンター（台右側） -->
+    <div id="data-counter">
+      <div class="dc-title">DATA COUNTER</div>
+      <div class="dc-row">
+        <span class="dc-label">TOTAL</span>
+        <span class="dc-value" id="dc-total">0000</span>
+      </div>
+      <div class="dc-row">
+        <span class="dc-label">G</span>
+        <span class="dc-value" id="dc-games">000</span>
+      </div>
+      <div class="dc-row">
+        <span class="dc-label">BB</span>
+        <span class="dc-value" id="dc-bb">00</span>
+      </div>
+      <div class="dc-row">
+        <span class="dc-label">RB</span>
+        <span class="dc-value" id="dc-rb">00</span>
+      </div>
+      <div class="dc-row">
+        <span class="dc-label">DIFF</span>
+        <span class="dc-value" id="dc-diff">+0000</span>
+      </div>
+      <div class="dc-row" style="border-top: 1px solid #1a1a1a; margin-top: 8px; padding-top: 4px;">
+        <span class="dc-label">CREDIT</span>
+        <span class="dc-value" id="dc-credits">0000</span>
+      </div>
+      <!-- スランプグラフ -->
+      <canvas id="slump-graph" width="180" height="250"></canvas>
+      
+      <!-- 成立役履歴 -->
+      <div id="win-history-container">
+        <div class="dc-title" style="margin-top: 10px;">HISTORY</div>
+        <div id="win-history-list"></div>
+      </div>
     </div>
   </div>
   <script type="module" src="/src/main.ts"></script>

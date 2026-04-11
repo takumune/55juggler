@@ -55,6 +55,31 @@ export class GameState {
   /** フェーズ6.3: フラッシュ演出の終了予定時刻 (ms) */
   public flashEndTime: number = 0;
 
+  // ─────────────────────────────────────────
+  // データカウンター用プロパティ
+  // ─────────────────────────────────────────
+
+  /** 総ゲーム数 */
+  public totalGames: number = 0;
+
+  /** 現在のゲーム数（ボーナス後にリセット） */
+  public currentGames: number = 0;
+
+  /** BIG BONUS 回数 */
+  public bbCount: number = 0;
+
+  /** REGULAR BONUS 回数 */
+  public rbCount: number = 0;
+
+  /** 差枚数（ベットで減少・払い出しで増加） */
+  public netCoinDiff: number = 0;
+
+  /** スランプグラフ用の差枚数履歴 */
+  public history: number[] = [0];
+
+  /** 成立役の履歴（ゲーム数と役のセット） */
+  public winHistory: { game: number, role: string }[] = [];
+
   private constructor() {}
 
   /** シングルトンインスタンスを取得 */
