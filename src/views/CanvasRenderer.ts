@@ -13,7 +13,7 @@ import { gameState } from '../state/GameState';
 // 図柄スタイル定義
 // ─────────────────────────────────────────
 
-/** 図柄ごとの背景色・文字色・表示ラベル */
+/** 図柄ごとの背景色・文字色・表示ラベル (フォールバック用) */
 const SYMBOL_STYLE: Record<SymbolType, { bg: string; fg: string; label: string }> = {
   '7':      { bg: '#3d0000', fg: '#ff4444', label: '７'  },
   'BELL':   { bg: '#2e2800', fg: '#ffd700', label: 'BEL' },
@@ -22,6 +22,17 @@ const SYMBOL_STYLE: Record<SymbolType, { bg: string; fg: string; label: string }
   'BAR':    { bg: '#0d0d0d', fg: '#aaaaaa', label: 'BAR' },
   'CHERRY': { bg: '#3d0012', fg: '#ff6688', label: 'CHR' },
   'CLOWN':  { bg: '#3d1800', fg: '#ff9922', label: 'CLN' },
+};
+
+/** 読み込む画像アセットのパス (Phase 7.1/8.1) */
+const IMAGE_PATHS: Record<SymbolType, string> = {
+  '7': '/img/Seven.jpg',
+  'BAR': '/img/bar.jpg',
+  'REPLAY': '/img/REPLAY.jpg',
+  'GRAPE': '/img/grp.jpg',
+  'BELL': '/img/Bell.jpg',
+  'CHERRY': '/img/Cherry.jpg',
+  'CLOWN': '/img/clown.jpg',
 };
 
 const REEL_IDS: ReelId[] = ['left', 'center', 'right'];
@@ -40,6 +51,9 @@ const TOTAL_STRIP_HEIGHT = REEL_LENGTH * SYMBOL_HEIGHT;
 export class CanvasRenderer {
   private readonly canvas: HTMLCanvasElement;
   private readonly ctx: CanvasRenderingContext2D;
+  private imageAssets: Record<SymbolType, HTMLImageElement | null> = {
+    '7': null, 'BAR': null, 'REPLAY': null, 'GRAPE': null, 'BELL': null, 'CHERRY': null, 'CLOWN': null
+  };
 
   constructor(mountPoint: HTMLElement) {
     this.canvas    = document.createElement('canvas');
@@ -52,6 +66,15 @@ export class CanvasRenderer {
     this.ctx = ctx;
 
     mountPoint.appendChild(this.canvas);
+
+    // 画像アセットの非同期読み込み
+    Object.entries(IMAGE_PATHS).forEach(([key, path]) => {
+      const img = new Image();
+      img.src = path;
+      img.onload = () => {
+        this.imageAssets[key as SymbolType] = img;
+      };
+    });
   }
 
   // ─────────────────────────────────────────
@@ -64,39 +87,11 @@ export class CanvasRenderer {
    * @param reelCtrl  ReelController インスタンス（スクロール量の取得に使用）
    */
   render(_dt: number, reelCtrl: ReelController): void {
-    this.clearScreen();
-    this.drawTitle();
+    // 全体を透明にクリア（背景の筐体画像を見せるため）
+    this.ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    
     this.drawReels(reelCtrl);
-    this.drawReelFrame();
     this.drawWinLine();
-    this.drawGogoLamp();
-    this.drawUI();
-  }
-
-  // ─────────────────────────────────────────
-  // プライベート：背景 / タイトル
-  // ─────────────────────────────────────────
-
-  private clearScreen(): void {
-    this.ctx.fillStyle = '#0a0a0a';
-    this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-  }
-
-  /** ゲームタイトルをキャンバス上部に描画 */
-  private drawTitle(): void {
-    this.ctx.textAlign    = 'center';
-    this.ctx.textBaseline = 'middle';
-    this.ctx.fillStyle    = '#ffd700';
-    this.ctx.font         = 'bold 28px "Courier New", monospace';
-    this.ctx.fillText('55 JUGGLER', CANVAS_WIDTH / 2, 50);
-
-    // 下線
-    this.ctx.strokeStyle = '#ffd70055';
-    this.ctx.lineWidth   = 1;
-    this.ctx.beginPath();
-    this.ctx.moveTo(CANVAS_WIDTH / 2 - 100, 66);
-    this.ctx.lineTo(CANVAS_WIDTH / 2 + 100, 66);
-    this.ctx.stroke();
   }
 
   // ─────────────────────────────────────────
@@ -117,8 +112,8 @@ export class CanvasRenderer {
       this.ctx.rect(reelX, REEL_AREA_Y, SYMBOL_WIDTH, REEL_VIEW_HEIGHT);
       this.ctx.clip();
 
-      // リール背景
-      this.ctx.fillStyle = '#050505';
+      // リール背景 (通常: スロット筐体特有の白いリール帯)
+      this.ctx.fillStyle = '#f4f4f4';
       this.ctx.fillRect(reelX, REEL_AREA_Y, SYMBOL_WIDTH, REEL_VIEW_HEIGHT);
 
       // ── 下向きスクロール計算 ──
@@ -136,6 +131,12 @@ export class CanvasRenderer {
         this.drawSymbol(symbol, drawX, drawY);
       }
 
+      // フェーズ6.3: フラッシュ演出 (バックライトのように全ての図柄の上から重ねることで視認性を上げる)
+      if (Date.now() < gameState.flashEndTime) {
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'; // 半透明の白
+        this.ctx.fillRect(reelX, REEL_AREA_Y, SYMBOL_WIDTH, REEL_VIEW_HEIGHT);
+      }
+
       this.ctx.restore(); // clip を解除
 
       // コマ境界線（clip 外に描くため restore 後）
@@ -145,26 +146,55 @@ export class CanvasRenderer {
 
   /**
    * 1コマ分の図柄を描画する。
-   * 背景塗りつぶし → 境界線 → ラベルテキストの順で重ねる。
+   * 画像が読み込まれていれば画像を描画し、そうでない場合はフォールバックのテキストを描画する。
    */
   private drawSymbol(symbol: SymbolType, x: number, y: number): void {
-    const style = SYMBOL_STYLE[symbol];
+    const img = this.imageAssets[symbol];
 
-    // 背景
-    this.ctx.fillStyle = style.bg;
-    this.ctx.fillRect(x, y, SYMBOL_WIDTH, SYMBOL_HEIGHT);
+    if (img && img.complete) {
+      // リール帯の背景色を敷く
+      this.ctx.fillStyle = '#f4f4f4';
+      this.ctx.fillRect(x, y, SYMBOL_WIDTH, SYMBOL_HEIGHT);
 
-    // 内枠ハイライト（上辺のみ明るく）
-    this.ctx.strokeStyle = 'rgba(255,255,255,0.07)';
-    this.ctx.lineWidth   = 1;
-    this.ctx.strokeRect(x + 0.5, y + 0.5, SYMBOL_WIDTH - 1, SYMBOL_HEIGHT - 1);
+      // 7やBARは大きく、小役は小さく表示するためのパディング設定
+      let padX = 0;
+      let padY = 0;
+      
+      if (symbol === '7' || symbol === 'BAR') {
+        padX = 5;
+        padY = 2;
+      } else {
+        padX = 30; // 横幅をぐっと絞る
+        padY = 6;  // 縦幅も少し絞る
+      }
 
-    // ラベルテキスト
-    this.ctx.fillStyle    = style.fg;
-    this.ctx.font         = 'bold 22px "Courier New", monospace';
-    this.ctx.textAlign    = 'center';
-    this.ctx.textBaseline = 'middle';
-    this.ctx.fillText(style.label, x + SYMBOL_WIDTH / 2, y + SYMBOL_HEIGHT / 2);
+      // ユーザー追加画像を描画（パディングを考慮）
+      this.ctx.drawImage(img, x + padX, y + padY, SYMBOL_WIDTH - padX * 2, SYMBOL_HEIGHT - padY * 2);
+      
+      // 文字盤の境目を見やすくるためのごく薄い線
+      this.ctx.strokeStyle = 'rgba(0,0,0,0.05)';
+      this.ctx.lineWidth   = 1;
+      this.ctx.strokeRect(x, y, SYMBOL_WIDTH, SYMBOL_HEIGHT);
+    } else {
+      // フォールバック処理
+      const style = SYMBOL_STYLE[symbol];
+
+      // 背景
+      this.ctx.fillStyle = style.bg;
+      this.ctx.fillRect(x, y, SYMBOL_WIDTH, SYMBOL_HEIGHT);
+
+      // 内枠ハイライト（上辺のみ明るく）
+      this.ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+      this.ctx.lineWidth   = 1;
+      this.ctx.strokeRect(x + 0.5, y + 0.5, SYMBOL_WIDTH - 1, SYMBOL_HEIGHT - 1);
+
+      // ラベルテキスト
+      this.ctx.fillStyle    = style.fg;
+      this.ctx.font         = 'bold 22px "Courier New", monospace';
+      this.ctx.textAlign    = 'center';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.fillText(style.label, x + SYMBOL_WIDTH / 2, y + SYMBOL_HEIGHT / 2);
+    }
   }
 
   /**
@@ -172,7 +202,7 @@ export class CanvasRenderer {
    * （clip 解除後に呼ぶこと）
    */
   private drawRowSeparators(reelX: number): void {
-    this.ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    this.ctx.strokeStyle = 'rgba(0,0,0,0.1)'; // 白いリール帯に合わせた薄いグレーの境目
     this.ctx.lineWidth   = 1;
     for (let row = 1; row < VISIBLE_ROWS; row++) {
       const lineY = REEL_AREA_Y + row * SYMBOL_HEIGHT;
@@ -187,31 +217,6 @@ export class CanvasRenderer {
   // プライベート：リール枠・ライン
   // ─────────────────────────────────────────
 
-  /** 3本リールを囲む外枠を描画する */
-  private drawReelFrame(): void {
-    const pad = 3;
-    const x   = REEL_AREA_X - pad;
-    const y   = REEL_AREA_Y - pad;
-    const w   = SYMBOL_WIDTH * 3 + REEL_GAP * 2 + pad * 2;
-    const h   = REEL_VIEW_HEIGHT + pad * 2;
-
-    // 外枠
-    this.ctx.strokeStyle = '#555555';
-    this.ctx.lineWidth   = 2;
-    this.ctx.strokeRect(x, y, w, h);
-
-    // リール間の縦区切り線
-    this.ctx.strokeStyle = '#333333';
-    this.ctx.lineWidth   = 1;
-    for (let i = 1; i < 3; i++) {
-      const lineX = REEL_AREA_X + i * (SYMBOL_WIDTH + REEL_GAP) - REEL_GAP / 2;
-      this.ctx.beginPath();
-      this.ctx.moveTo(lineX, y);
-      this.ctx.lineTo(lineX, y + h);
-      this.ctx.stroke();
-    }
-  }
-
   /**
    * 入賞ライン（中段）を両サイドのマーカーで示す。
    */
@@ -219,83 +224,11 @@ export class CanvasRenderer {
     const midY     = REEL_AREA_Y + SYMBOL_HEIGHT + SYMBOL_HEIGHT / 2;
     const markerW  = 10;
     const markerH  = 4;
-    const pad      = 3;
-    const leftEdge = REEL_AREA_X - pad;
-    const rightEdge = REEL_AREA_X + SYMBOL_WIDTH * 3 + REEL_GAP * 2 + pad;
 
     this.ctx.fillStyle = '#ff4444';
     // 左マーカー
-    this.ctx.fillRect(leftEdge - markerW - 2, midY - markerH / 2, markerW, markerH);
+    this.ctx.fillRect(0, midY - markerH / 2, markerW, markerH);
     // 右マーカー
-    this.ctx.fillRect(rightEdge + 2,           midY - markerH / 2, markerW, markerH);
-  }
-
-  /**
-   * 画面左下付近に告知ランプ（GOGO!）を描画する
-   */
-  private drawGogoLamp(): void {
-    const x = REEL_AREA_X - 60;
-    const y = REEL_AREA_Y + REEL_VIEW_HEIGHT - 20;
-
-    this.ctx.save();
-    this.ctx.textAlign = 'center';
-    this.ctx.textBaseline = 'middle';
-    this.ctx.font = 'bold 36px "Courier New", monospace';
-    
-    if (gameState.isGogoLampOn) {
-      this.ctx.fillStyle = '#ff00ff';
-      // 光の拡散効果
-      this.ctx.shadowColor = '#ff22ff';
-      this.ctx.shadowBlur = 25;
-    } else {
-      this.ctx.fillStyle = '#222222';
-      this.ctx.shadowBlur = 0;
-    }
-    
-    this.ctx.fillText('GOGO!', x, y);
-    this.ctx.restore();
-  }
-
-  // ─────────────────────────────────────────
-  // プライベート：UI情報描画
-  // ─────────────────────────────────────────
-
-  /**
-   * メダル情報（CREDIT, PAY, BET）を画面下部にデジタル表示する
-   */
-  private drawUI(): void {
-    const marginY = CANVAS_HEIGHT - 30;
-
-    this.ctx.textBaseline = 'middle';
-    this.ctx.font = 'bold 24px "Courier New", monospace';
-
-    // ── BET 表示 (左下) ──
-    this.ctx.textAlign = 'left';
-    this.ctx.fillStyle = '#ff4444';
-    this.ctx.fillText(`BET: ${gameState.bet}`, 30, marginY);
-
-    // ── PAY 表示 (右下・上段) ──
-    this.ctx.textAlign = 'right';
-    this.ctx.fillStyle = '#00ffaa';
-    this.ctx.fillText(`PAY: ${gameState.pay}`, CANVAS_WIDTH - 30, marginY - 30);
-
-    // ── CREDIT 表示 (右下・下段) ──
-    this.ctx.fillStyle = '#ffaa00';
-    this.ctx.fillText(`CREDIT: ${gameState.credits}`, CANVAS_WIDTH - 30, marginY);
-
-    // ── 設定 表示 (左上) ──
-    this.ctx.textAlign = 'left';
-    this.ctx.textBaseline = 'top';
-    this.ctx.fillStyle = '#aaaaaa';
-    this.ctx.font = 'bold 16px "Courier New", monospace';
-    this.ctx.fillText(`SETTING: ${gameState.setting}`, 15, 15);
-
-    // ── ボーナス経過 表示 (右上) ──
-    if (gameState.playState === 'BONUS_GAME') {
-      this.ctx.textAlign = 'right';
-      this.ctx.fillStyle = '#ff55aa';
-      const target = gameState.runningBonus === 'BIG' ? 252 : 98;
-      this.ctx.fillText(`${gameState.runningBonus} PAY: ${gameState.currentBonusPayOut} / ${target}`, CANVAS_WIDTH - 15, 15);
-    }
+    this.ctx.fillRect(CANVAS_WIDTH - markerW, midY - markerH / 2, markerW, markerH);
   }
 }

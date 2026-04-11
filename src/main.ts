@@ -22,6 +22,17 @@ const reelController = new ReelController();
 // フェーズ1実装に伴い、初期状態での自動回転は停止しました。
 
 // ─────────────────────────────────────────
+// UI要素のイベントリスナー
+// ─────────────────────────────────────────
+const waitToggleEl = document.getElementById('wait-toggle') as HTMLInputElement | null;
+if (waitToggleEl) {
+  waitToggleEl.addEventListener('change', (e) => {
+    gameState.isWaitEnabled = (e.target as HTMLInputElement).checked;
+    console.log(`[SYSTEM] ウェイト機能を ${gameState.isWaitEnabled ? 'ON' : 'OFF'} にしました。`);
+  });
+}
+
+// ─────────────────────────────────────────
 // キーボード入力
 // ─────────────────────────────────────────
 
@@ -85,11 +96,22 @@ window.addEventListener('keydown', (e: KeyboardEvent) => {
       console.log('[DEBUG] BIGボーナスフラグを強制セットしました！');
       break;
     case ' ':
-      // 全リールが停止済みのときのみ再スタート
+      e.preventDefault(); // スペースキーによる画面スクロールを防止
+      
       if (reelController.areAllStopped()) {
-        if (gameState.bet < 3) {
-          console.log('[SYSTEM] メダルを3枚BETしてください');
-          return;
+        if (gameState.isWaiting) return; // すでにレバーON（ウェイト予約済み）なら無視
+
+        // オートベット機能: メダルが足りていなければ自動で投入する
+        if (gameState.bet < 3 && !gameState.isReplay) {
+          const required = 3 - gameState.bet;
+          if (gameState.credits >= required) {
+            gameState.credits -= required;
+            gameState.bet = 3;
+            console.log('[SYSTEM] 3枚BET完了（Spaceキー自動処理）');
+          } else {
+            console.log('[SYSTEM] クレジットが足りません。↑キー等でメダルを追加してください。');
+            return;
+          }
         }
 
         // 次ゲーム開始時の初期化
@@ -123,7 +145,35 @@ window.addEventListener('keydown', (e: KeyboardEvent) => {
           }
         }
 
-        reelController.startAll();
+        // 6.1: ウェイト機能 (4.1秒)
+        const now = Date.now();
+        const elapsed = now - gameState.lastSpinTime;
+        const waitTime = gameState.isWaitEnabled ? 4100 : 0;
+
+        // もし前回のスピン開始から所定の時間経っていなければ、残りの時間を待ってから回転開始
+        if (elapsed < waitTime) {
+          gameState.isWaiting = true;
+          const remaining = waitTime - elapsed;
+          console.log(`[SYSTEM] ウェイト中... (${remaining}ms)`);
+          
+          setTimeout(() => {
+            gameState.isWaiting = false;
+            gameState.lastSpinTime = Date.now();
+            reelController.startAll();
+          }, remaining);
+        } else {
+          gameState.lastSpinTime = now;
+          reelController.startAll();
+        }
+      } else {
+        // 回転中（または滑り中）の場合、順番に停止を試みる（順押し）
+        if (reelController.getState('left').status === 'SPINNING') {
+          reelController.stopReel(0);
+        } else if (reelController.getState('center').status === 'SPINNING') {
+          reelController.stopReel(1);
+        } else if (reelController.getState('right').status === 'SPINNING') {
+          reelController.stopReel(2);
+        }
       }
       break;
   }
@@ -133,6 +183,37 @@ window.addEventListener('keydown', (e: KeyboardEvent) => {
 // メインゲームループ
 // ─────────────────────────────────────────
 let lastTime = 0;
+
+function updateDOMUI(): void {
+  const creditEl = document.getElementById('credit-display');
+  if (creditEl) creditEl.textContent = `CREDIT: ${gameState.credits}`;
+  
+  const payEl = document.getElementById('pay-display');
+  if (payEl) payEl.textContent = `PAY: ${gameState.pay}`;
+  
+  const betEl = document.getElementById('bet-display');
+  if (betEl) betEl.textContent = `BET: ${gameState.bet}`;
+  
+  const setEl = document.getElementById('setting-display');
+  if (setEl) setEl.textContent = `SETTING: ${gameState.setting}`;
+  
+  const lampEl = document.getElementById('bonus-lamp');
+  if (lampEl) {
+    if (gameState.isGogoLampOn) lampEl.classList.add('on');
+    else lampEl.classList.remove('on');
+  }
+
+  const bonusPayEl = document.getElementById('bonus-pay-display');
+  if (bonusPayEl) {
+    if (gameState.playState === 'BONUS_GAME') {
+      const target = gameState.runningBonus === 'BIG' ? 252 : 98;
+      bonusPayEl.textContent = `${gameState.runningBonus} PAY: ${gameState.currentBonusPayOut} / ${target}`;
+      bonusPayEl.style.display = 'block';
+    } else {
+      bonusPayEl.style.display = 'none';
+    }
+  }
+}
 
 /**
  * requestAnimationFrame から毎フレーム呼び出されるゲームループ。
@@ -157,6 +238,9 @@ function gameLoop(timestamp: number): void {
 
   // ── Render ──
   renderer.render(dt, reelController);
+
+  // ── UI Overlay Update ──
+  updateDOMUI();
 
   requestAnimationFrame(gameLoop);
 }

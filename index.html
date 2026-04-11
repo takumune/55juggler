@@ -8,20 +8,33 @@
   </head>
   <body>
     <div class="wrapper">
-      <div id="app"></div>
+      <div id="machine-wrapper">
+        <img id="kyotai-img" src="/img/kyotai.png" alt="slot machine" />
+        <div id="app"></div>
+        
+        <!-- UI (キャンバス外に配置) -->
+        <div id="bonus-lamp">GOGO!</div>
+        <div class="digital-display" id="credit-display">CREDIT: 0</div>
+        <div class="digital-display" id="pay-display">PAY: 0</div>
+        <div class="digital-display" id="bet-display">BET: 0</div>
+        <div class="digital-display" id="setting-display">SETTING: 6</div>
+        <div class="digital-display" id="bonus-pay-display" style="display: none;"></div>
+      </div>
       <div id="instructions">
         <p><strong>【 操作方法 】</strong></p>
         <p>
-          <kbd>↑</kbd>：メダル投入 (50枚)&nbsp;&nbsp;|&nbsp;&nbsp;
-          <kbd>Enter</kbd>：MAX BET (3枚)&nbsp;&nbsp;|&nbsp;&nbsp;
-          <kbd>Space</kbd>：レバーON (回転)
+          <kbd>↑</kbd>：メダル追加 (50枚)&nbsp;&nbsp;|&nbsp;&nbsp;
+          <kbd>Space</kbd>：オートBET ＆ 回転 ＆ 順押しストップ
         </p>
         <p>
-          <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd>：ストップ (左・中・右)&nbsp;&nbsp;|&nbsp;&nbsp;
-          <kbd>s</kbd>：設定変更 (1〜6)
+          <kbd>Enter</kbd>：手動BET&nbsp;&nbsp;|&nbsp;&nbsp;
+          <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd>：手動ストップ&nbsp;&nbsp;|&nbsp;&nbsp;
+          <kbd>s</kbd>：設定変更 (1〜6, X)
         </p>
         <p style="font-size: 12px; margin-top: 5px; color: #777;">
           <kbd>0</kbd>：[デバッグ] 強制ボーナスフラグ
+          &nbsp;&nbsp;|&nbsp;&nbsp;
+          <label><input type="checkbox" id="wait-toggle" checked> ウェイト(4.1秒)有効</label>
         </p>
       </div>
     </div>

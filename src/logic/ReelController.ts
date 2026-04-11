@@ -414,6 +414,9 @@ export class ReelController {
       console.log(`🎰 小役入賞: ${totalPay}枚の払い出し！`);
       gameState.pay = totalPay;
       gameState.credits += totalPay;
+      
+      // フェーズ6.3: フラッシュ演出（バックライトを500ms点滅）
+      gameState.flashEndTime = Date.now() + 500;
     }
 
     // フェーズ5.1: ボーナス終了判定

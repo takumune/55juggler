@@ -37,10 +37,104 @@ body {
   gap: 20px;
 }
 
-#app {
+#machine-wrapper {
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
+  /* 筐体の高さに合わせる */
+  max-width: 100vw;
+  max-height: 85vh;
+}
+
+#kyotai-img {
+  max-width: 100%;
+  max-height: 85vh;
+  object-fit: contain;
+  /* 筐体が上になるか下になるかはz-indexで指定。現時点では背景として扱う */
+  z-index: 1;
+}
+
+#app {
+  /* フェーズ8.2: 筐体画像のリール窓の位置に合わせて配置 */
+  position: absolute;
+  top: 36%;
+  /* この数値をブラウザで見ながら調整してください */
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 63.5%;
+  /* キャンバスの幅。実機画像の429px/676px = 63.46%に合わせて調整 */
+  z-index: 2;
+}
+
+#slot-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* 鮮明なピクセル描画のためスムージングを無効化 */
+  image-rendering: auto;
+  /* 画像の高品質な縮小のために一時的にautoを利用 */
+}
+
+/* =========================================
+   UI Overlay Elements
+   ========================================= */
+#bonus-lamp {
+  position: absolute;
+  bottom: 12%;
+  left: 10%;
+  font-size: 28px;
+  font-weight: bold;
+  font-family: "Courier New", monospace;
+  color: #222;
+  z-index: 3;
+  transition: all 0.1s;
+}
+
+#bonus-lamp.on {
+  color: #ff00ff;
+  text-shadow: 0 0 20px #ff22ff, 0 0 40px #ff22ff;
+}
+
+.digital-display {
+  position: absolute;
+  font-family: "Courier New", monospace;
+  font-size: 16px;
+  font-weight: bold;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 4px 8px;
+  border-radius: 4px;
+  z-index: 3;
+}
+
+#credit-display {
+  bottom: 5%;
+  right: 5%;
+  color: #ffaa00;
+}
+
+#pay-display {
+  bottom: 12%;
+  right: 5%;
+  color: #00ffaa;
+}
+
+#bet-display {
+  bottom: 5%;
+  left: 30%;
+  color: #ff4444;
+}
+
+#setting-display {
+  top: 5%;
+  left: 5%;
+  color: #aaaaaa;
+}
+
+#bonus-pay-display {
+  top: 5%;
+  right: 5%;
+  color: #ff55aa;
 }
 
 #instructions {
@@ -58,6 +152,7 @@ body {
 #instructions p {
   margin-bottom: 8px;
 }
+
 #instructions p:last-child {
   margin-bottom: 0;
 }
@@ -69,16 +164,4 @@ body {
   border-radius: 4px;
   font-family: "Courier New", monospace;
   font-weight: bold;
-}
-
-/* =========================================
-   Canvas
-   ========================================= */
-#slot-canvas {
-  display: block;
-  /* 鮮明なピクセル描画のためスムージングを無効化 */
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
-  /* 細い枠線でキャンバス境界を視覚的に示す（デバッグ用） */
-  outline: 1px solid #333333;
 }

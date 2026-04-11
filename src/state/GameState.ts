@@ -40,6 +40,18 @@ export class GameState {
   /** 次ゲームへのリプレイ状態 */
   public isReplay: boolean = false;
 
+  /** フェーズ6.1: 前回のスピン開始時刻 (ms) */
+  public lastSpinTime: number = 0;
+
+  /** フェーズ6.1: ウェイト機能の有効/無効 */
+  public isWaitEnabled: boolean = true;
+
+  /** インターバル待ち中かどうか */
+  public isWaiting: boolean = false;
+
+  /** フェーズ6.3: フラッシュ演出の終了予定時刻 (ms) */
+  public flashEndTime: number = 0;
+
   private constructor() {}
 
   /** シングルトンインスタンスを取得 */

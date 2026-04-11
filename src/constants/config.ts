@@ -3,8 +3,8 @@ import type { SymbolType } from '../types';
 // ─────────────────────────────────────────
 // 画面・キャンバス設定
 // ─────────────────────────────────────────
-export const CANVAS_WIDTH = 800;
-export const CANVAS_HEIGHT = 600;
+export const CANVAS_WIDTH = 429;
+export const CANVAS_HEIGHT = 144;
 
 // ─────────────────────────────────────────
 // ゲームループ設定
@@ -60,8 +60,8 @@ export const REEL_CONFIG: Record<'left' | 'center' | 'right', SymbolType[]> = {
 // ─────────────────────────────────────────
 
 /** 1コマあたりのサイズ (px) */
-export const SYMBOL_WIDTH = 100;
-export const SYMBOL_HEIGHT = 100;
+export const SYMBOL_WIDTH = 139;
+export const SYMBOL_HEIGHT = 48;
 
 /** 1リールに表示するコマ数（上・中・下） */
 export const VISIBLE_ROWS = 3;
@@ -70,7 +70,7 @@ export const VISIBLE_ROWS = 3;
 export const REEL_VIEW_HEIGHT = SYMBOL_HEIGHT * VISIBLE_ROWS;
 
 /** リール間のギャップ (px) */
-export const REEL_GAP = 10;
+export const REEL_GAP = 6;
 
 /** リール数 */
 export const REEL_COUNT = 3;
@@ -84,9 +84,9 @@ export const REEL_AREA_WIDTH = SYMBOL_WIDTH * REEL_COUNT + REEL_GAP * (REEL_COUN
 /**
  * リール表示エリアの左上起点 X 座標（キャンバス中央揃え）。
  */
-export const REEL_AREA_X = (CANVAS_WIDTH - REEL_AREA_WIDTH) / 2;
+export const REEL_AREA_X = 0; // (CANVAS_WIDTH - REEL_AREA_WIDTH) / 2;
 
 /**
  * リール表示エリアの左上起点 Y 座標（キャンバス上寄り配置）。
  */
-export const REEL_AREA_Y = (CANVAS_HEIGHT - REEL_VIEW_HEIGHT) / 2 - 40;
+export const REEL_AREA_Y = 0; // (CANVAS_HEIGHT - REEL_VIEW_HEIGHT) / 2 - 40;
