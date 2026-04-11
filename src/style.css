@@ -312,7 +312,7 @@ body {
   align-self: stretch;
   flex: 1;
   min-width: 120px;
-  max-height: 800px; /* 筐体高さに制限 */
+  max-height: 85vh; /* 筐体と同じ最大高さ */
   overflow-y: auto;
 }
 
@@ -346,13 +346,14 @@ body {
   border-radius: 6px;
   padding: 10px 12px;
   min-width: 200px;
-  max-height: 800px; /* 筐体高さに制限 */
+  max-height: 85vh; /* 筐体と同じ最大高さ */
   font-family: 'Share Tech Mono', 'Courier New', monospace;
 
   /* 子要素を縦に並べて、履歴を伸ばす */
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;
 }
 
 .dc-title {
@@ -401,6 +402,7 @@ body {
   flex-direction: column;
   overflow: hidden;
   margin-top: 10px;
+  min-height: 0; /* 重要：中身に合わせて伸びるのを防ぐ */
 }
 
 #win-history-list {
@@ -410,6 +412,7 @@ body {
   border: 1px solid #111;
   border-radius: 4px;
   padding: 6px;
+  min-height: 0; /* 重要 */
 }
 
 .history-item {

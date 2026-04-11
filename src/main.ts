@@ -234,17 +234,6 @@ function updateDOMUI(): void {
 
   drawSlumpGraph();
   updateWinHistoryUI();
-
-  const bonusPayEl = document.getElementById('bonus-pay-display');
-  if (bonusPayEl) {
-    if (gameState.playState === 'BONUS_GAME') {
-      const target = gameState.runningBonus === 'BIG' ? 252 : 98;
-      bonusPayEl.textContent = `${gameState.runningBonus} PAY: ${gameState.currentBonusPayOut} / ${target}`;
-      bonusPayEl.style.display = 'block';
-    } else {
-      bonusPayEl.style.display = 'none';
-    }
-  }
 }
 
 let lastHistoryLength = 0;
