@@ -522,22 +522,19 @@ export class ReelController {
       gameState.isReplay = false;
     }
 
-    if (gameState.playState === 'BONUS_STANDBY') {
-      // 既にフラグが立ってランプが光っている状態でのボーナス入賞完了
-      if (wonBonus !== 'NONE') {
-        console.log(`🎉 ボーナス（${wonBonus}）開始！`);
-        gameState.playState = 'BONUS_GAME';
-        gameState.runningBonus = wonBonus as any; // どのボーナスを開始したか記録
-        gameState.activeBonus = 'NONE';
-        gameState.isGogoLampOn = false;
-      }
-    } else if (gameState.playState === 'NORMAL') {
-      // 後告知: 回転開始時の抽選で当選していれば、停止時にランプを点灯する
-      if (gameState.activeBonus !== 'NONE') {
-        gameState.isGogoLampOn = true;
-        gameState.playState = 'BONUS_STANDBY';
-        console.log('[DEBUG] GOGO!ランプ点灯 ✨');
-      }
+    // ボーナス開始・告知判定
+    if (wonBonus !== 'NONE') {
+      // 既に告知済み(STANDBY)か、偶然揃った(NORMAL)場合、ボーナスゲーム開始
+      console.log(`🎉 ボーナス（${wonBonus}）開始！`);
+      gameState.playState = 'BONUS_GAME';
+      gameState.runningBonus = wonBonus as any;
+      gameState.activeBonus = 'NONE'; // 内部フラグを消費
+      gameState.isGogoLampOn = false; // ランプを消灯
+    } else if (gameState.playState === 'NORMAL' && gameState.activeBonus !== 'NONE') {
+      // 内部当落はあるが、まだ揃っていない場合は後告知（STANDBYへ）
+      gameState.isGogoLampOn = true;
+      gameState.playState = 'BONUS_STANDBY';
+      console.log('[DEBUG] GOGO!ランプ点灯 ✨');
     }
   }
 }

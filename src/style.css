@@ -307,11 +307,13 @@ body {
   padding: 14px 16px;
   border-radius: 8px;
   border: 1px solid #333;
-  line-height: 2;
-  font-size: 12px;
+  line-height: 1.8;
+  font-size: 11px;
   align-self: stretch;
-  flex: 1;           /* 横方向に伸びる */
+  flex: 1;
   min-width: 120px;
+  max-height: 800px; /* 筐体高さに制限 */
+  overflow-y: auto;
 }
 
 #instructions p {
@@ -344,11 +346,13 @@ body {
   border-radius: 6px;
   padding: 10px 12px;
   min-width: 200px;
+  max-height: 800px; /* 筐体高さに制限 */
   font-family: 'Share Tech Mono', 'Courier New', monospace;
 
   /* 子要素を縦に並べて、履歴を伸ばす */
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .dc-title {
