@@ -27,14 +27,15 @@ const SYMBOL_STYLE: Record<SymbolType, { bg: string; fg: string; label: string }
 };
 
 /** 読み込む画像アセットのパス (Phase 7.1/8.1) */
+const BASE_URL = import.meta.env.BASE_URL || '/';
 const IMAGE_PATHS: Record<SymbolType, string> = {
-  '7': '/img/Seven.png',
-  'BAR': '/img/bar.png',
-  'REPLAY': '/img/Replay.png',
-  'GRAPE': '/img/grp.png',
-  'BELL': '/img/Bell.png',
-  'CHERRY': '/img/Cherry.png',
-  'CLOWN': '/img/clown.png',
+  '7':      `${BASE_URL}img/Seven.png`,
+  'BAR':    `${BASE_URL}img/bar.png`,
+  'REPLAY': `${BASE_URL}img/Replay.png`,
+  'GRAPE':  `${BASE_URL}img/grp.png`,
+  'BELL':   `${BASE_URL}img/Bell.png`,
+  'CHERRY': `${BASE_URL}img/Cherry.png`,
+  'CLOWN':  `${BASE_URL}img/clown.png`,
 };
 
 const REEL_IDS: ReelId[] = ['left', 'center', 'right'];
